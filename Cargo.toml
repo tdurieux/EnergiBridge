@@ -1,0 +1,24 @@
+[package]
+name = "energi_bridge"
+version = "0.1.0"
+edition = "2021"
+categories = ["os", "energy"]
+readme = "README.md"
+license = "MIT"
+
+build = "build.rs"
+
+[dependencies]
+clap = { version = "4.4.6", features = ["derive"] }
+nvml-wrapper = "^0.7.0"
+nvml-wrapper-sys = "^0.5.0"
+sysinfo = "0.29.10"
+x86 = "0.52.0"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+smc = "0.2.4"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+winapi = { version = "0.3", features = ["fileapi", "handleapi", "ioapiset", "minwindef", "pdh", "psapi", "synchapi", "sysinfoapi", "winbase", "winerror", "winioctl", "winnt", "oleauto", "wbemcli", "rpcdce", "combaseapi", "objidl", "objbase"] }
+ntapi = "0.3"
+x86 = "0.52.0"
