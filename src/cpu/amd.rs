@@ -11,7 +11,10 @@ const AMD_ENERGY_UNIT_MASK: u32 = 0x1F00;
 
 
 pub fn get_amd_cpu_cunter(results: &mut HashMap<String, f64>) {
+    #[cfg(target_os = "linux")]
     let nb_core = get_number_cores().unwrap() as u32;
+    #[cfg(target_os = "windows")]
+    let nb_core = 0;
 
     unsafe {
         let core_energy_units: u64 = read_msr_on_core(AMD_MSR_PWR_UNIT, 0).unwrap();

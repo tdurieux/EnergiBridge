@@ -5,6 +5,9 @@ mod process;
 
 use clap::Parser;
 
+use cpu::{get_cpu_cunter, get_cpu_usage};
+use gpu::get_gpu_cunter;
+use memory::get_memory_usage;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{stdout, Write};
@@ -12,10 +15,6 @@ use std::process::Command;
 use std::process::{exit, Child};
 use std::thread::sleep;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-
-use cpu::{get_cpu_cunter, get_cpu_usage, msr::start_rapl};
-use gpu::get_gpu_cunter;
-use memory::get_memory_usage;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -66,7 +65,8 @@ fn main() {
 
     match cmd {
         Ok(mut child) => {
-            start_rapl();
+            #[cfg(not(target_os = "macos"))]
+            cpu::msr::start_rapl();
             collect(child.id(), &mut results);
             print_header(&results, sep, &mut output);
             let mut previous_time = SystemTime::now();

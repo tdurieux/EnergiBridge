@@ -11,6 +11,7 @@ fn main() {
     match cpu {
         "GenuineIntel" => println!("cargo:rustc-cfg=intel"),
         "AuthenticAMD" => println!("cargo:rustc-cfg=amd"),
+        "Apple" => println!("cargo:rustc-cfg=apple"),
         _ => {
             panic!("unknown CPU detected: {}", cpu);
         }
