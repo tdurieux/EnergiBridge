@@ -74,6 +74,11 @@ jobs:
           strip: ${{ matrix.upx_strip }}
       # we use these artifact later in the docker build to prevent having to rebuild
       - uses: actions/upload-artifact@v3
+        if: endsWith(matrix.target, 'windows-msvc')
+        with:
+          name: energy_bridge.exe
+          path: target/${{ matrix.target }}/release/${{ steps.read_cargo_toml.outputs.value }}.exe
+      - uses: actions/upload-artifact@v3
         if: ${{ matrix.target == 'aarch64-unknown-linux-musl' }}
         with:
           name: energy_bridge-arm64
@@ -100,6 +105,6 @@ jobs:
           target: ${{ matrix.target }}
           tar: all
           zip: windows
-          include: README.md
+          include: README.md LibreHardwareMonitor.sys
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
