@@ -1,6 +1,14 @@
-# Resource Usage
+# EnergyBridge
 
-This script is designed to collect resource usage data for a command and output it in a CSV format on stderr.
+[![Release](https://github.com/tdurieux/EnergiBridge/actions/workflows/release.yml/badge.svg)](https://github.com/tdurieux/EnergiBridge/actions/workflows/release.yml)
+
+This script is designed to collect resource usage data for a command and output it in a CSV format.
+
+| OS      | Intel CPU | AMD CPU | M1 CPU | Intel GPU | Nvidia GPU | AMD GPU | M1 GPU |
+| ------- | --------- | ------- | ------ | --------- | ---------- | ------- | ------ |
+| Linux   | ✅        | ✅      |        |           | ✅         |         |        |
+| Windows | ✅        | ✅      |        |           | ✅         |         |        |
+| Mac     |           |         | ✅     |           |            |         | ✅     |
 
 ## Requirements
 
@@ -15,6 +23,7 @@ Depending on your hardware you need different dependencies
 ### Windows
 
 Install LibreHardwareMonitor to access the CPU registry
+
 ```
 Create:
 
@@ -34,7 +43,6 @@ Delete:
 
 cargo build;
 ```
-
 
 ### Linux
 
@@ -73,7 +81,6 @@ Options:
 ```
 
 ## Output
-
 
 ```csv
 Time,Thread0 Core Effective Frequency,Thread1 Core Effective Frequency,Thread2 Core Effective Frequency,Thread3 Core Effective Frequency,Thread4 Core Effective Frequency,Thread5 Core Effective Frequency,Thread6 Core Effective Frequency,Thread7 Core Effective Frequency,Thread8 Core Effective Frequency,Thread9 Core Effective Frequency,Thread10 Core Effective Frequency,Thread11 Core Effective Frequency,Thread12 Core Effective Frequency,Thread13 Core Effective Frequency,Thread14 Core Effective Frequency,Thread15 Core Effective Frequency,Thread16 Core Effective Frequency,Thread17 Core Effective Frequency,Thread18 Core Effective Frequency,Thread19 Core Effective Frequency,Thread20 Core Effective Frequency,Thread21 Core Effective Frequency,Thread22 Core Effective Frequency,Thread23 Core Effective Frequency,Thread0 P-State,Thread1 P-State,Thread2 P-State,Thread3 P-State,Thread4 P-State,Thread5 P-State,Thread6 P-State,Thread7 P-State,Thread8 P-State,Thread9 P-State,Thread10 P-State,Thread11 P-State,Thread12 P-State,Thread13 P-State,Thread14 P-State,Thread15 P-State,Thread16 P-State,Thread17 P-State,Thread18 P-State,Thread19 P-State,Thread20 P-State,Thread21 P-State,Thread22 P-State,Thread23 P-State,Socket0 Package Power,Core0 Power,Core1 Power,Core2 Power,Core3 Power,Core4 Power,Core5 Power,Core6 Power,Core7 Power,Core8 Power,Core9 Power,Core10 Power,Core11 Power,Socket0 Temperature,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Process CPU Usage,Memory Total,Memory Free,Memory Usage,Process Memory Usage,GPU Usage,GPU Power,GPU Temperature,GPU Memory Total,GPU Memory Usage
