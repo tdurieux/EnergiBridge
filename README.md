@@ -6,50 +6,74 @@ This script is designed to collect resource usage data for a command and output 
 
 Depending on your hardware you need different dependencies
 
-### AMD
-
-- [uprof](https://www.amd.com/en/developer/uprof.html)
-
-```bash
-sudo apt-get install dkms
-tar –xf AMDuProf_Linux_x64_x.y.z.tar.bz2
-cd AMDuProf_Linux_x64_x.y.z/bin
-sudo ./AMDPowerProfilerDriver.sh install
-```
-
-### INTEL
-
-- PCM: https://github.com/intel/pcm
-
 ### NVIDIA
 
 - nvml
+
+## Install
+
+### Windows
+
+Install LibreHardwareMonitor to access the CPU registry
+```
+Create:
+
+`sc create rapl type= kernel binPath= "<path_to_LibreHardwareMonitor.sys>"`
+
+Start:
+
+`sc start rapl`
+
+Stop:
+
+`sc stop rapl`
+
+Delete:
+
+`sc delete rapl`
+
+cargo build;
+```
+
+
+### Linux
+
+```
+sudo chgrp -R msr /dev/cpu/*/msr;
+sudo chmod g+r /dev/cpu/*/msr;
+cargo build;
+sudo setcap cap_sys_rawio=ep target/debug/energy_bridge; # Any non-root program accessing the msr also needs the rawio capability
+```
 
 ## Usage
 
 To run the script, use the following command:
 
 ```
-sudo chgrp -R msr /dev/cpu/*/msr;
-sudo chmod g+r /dev/cpu/*/msr;
-make clean && make;
-sudo setcap cap_sys_rawio=ep monitor; # Any non-root program accessing the msr also needs the rawio capability
-./monitor
-  [-o output]         The output of the monitoring
-  [-c command_output] The path where to store the command output (stdout stderr)
-  [-i interval]       The interval of monitoring (default: 150ms)
-  [command [arg...]]  The command to execute
+Usage: energi_bridge[.exe] [OPTIONS] [COMMAND]...
+
+Arguments:
+  [COMMAND]...
+
+Options:
+  -o, --output <OUTPUT>
+
+  -s, --separator <SEPARATOR>
+          [default: ,]
+  -c, --command-output <COMMAND_OUTPUT>
+
+  -i, --interval <INTERVAL>
+          Duration of the interval between two measurements in micoseconds [default: 100]
+  -g, --gpu
+
+  -h, --help
+          Print help
+  -V, --version
+          Print versio
 ```
 
 ## Output
 
-The output is in CSV format and is directed to stderr.
-
-Example command:
-
-```bash
-./resource_usage sysbench --threads=16 cpu run 2> usage.csv
-```
 
 ```csv
 Time,Thread0 Core Effective Frequency,Thread1 Core Effective Frequency,Thread2 Core Effective Frequency,Thread3 Core Effective Frequency,Thread4 Core Effective Frequency,Thread5 Core Effective Frequency,Thread6 Core Effective Frequency,Thread7 Core Effective Frequency,Thread8 Core Effective Frequency,Thread9 Core Effective Frequency,Thread10 Core Effective Frequency,Thread11 Core Effective Frequency,Thread12 Core Effective Frequency,Thread13 Core Effective Frequency,Thread14 Core Effective Frequency,Thread15 Core Effective Frequency,Thread16 Core Effective Frequency,Thread17 Core Effective Frequency,Thread18 Core Effective Frequency,Thread19 Core Effective Frequency,Thread20 Core Effective Frequency,Thread21 Core Effective Frequency,Thread22 Core Effective Frequency,Thread23 Core Effective Frequency,Thread0 P-State,Thread1 P-State,Thread2 P-State,Thread3 P-State,Thread4 P-State,Thread5 P-State,Thread6 P-State,Thread7 P-State,Thread8 P-State,Thread9 P-State,Thread10 P-State,Thread11 P-State,Thread12 P-State,Thread13 P-State,Thread14 P-State,Thread15 P-State,Thread16 P-State,Thread17 P-State,Thread18 P-State,Thread19 P-State,Thread20 P-State,Thread21 P-State,Thread22 P-State,Thread23 P-State,Socket0 Package Power,Core0 Power,Core1 Power,Core2 Power,Core3 Power,Core4 Power,Core5 Power,Core6 Power,Core7 Power,Core8 Power,Core9 Power,Core10 Power,Core11 Power,Socket0 Temperature,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Thread24 Core Usage,Process CPU Usage,Memory Total,Memory Free,Memory Usage,Process Memory Usage,GPU Usage,GPU Power,GPU Temperature,GPU Memory Total,GPU Memory Usage

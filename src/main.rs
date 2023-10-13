@@ -13,7 +13,7 @@ use std::process::{exit, Child};
 use std::thread::sleep;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use cpu::{get_cpu_cunter, get_cpu_usage};
+use cpu::{get_cpu_cunter, get_cpu_usage, msr::start_rapl};
 use gpu::get_gpu_cunter;
 use memory::get_memory_usage;
 
@@ -66,6 +66,7 @@ fn main() {
 
     match cmd {
         Ok(mut child) => {
+            start_rapl();
             collect(child.id(), &mut results);
             print_header(&results, sep, &mut output);
             let mut previous_time = SystemTime::now();

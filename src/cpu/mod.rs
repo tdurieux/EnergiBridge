@@ -4,14 +4,11 @@ mod amd;
 mod apple;
 #[cfg(not(target_os = "macos"))]
 mod intel;
+#[cfg(not(target_os = "macos"))]
+pub mod msr;
 
 use std::collections::HashMap;
 use sysinfo::{CpuExt, System, SystemExt};
-
-#[cfg(target_os = "macos")]
-use apple::get_apple_cpu_cunter;
-#[cfg(not(target_os = "macos"))]
-use intel::get_intel_cpu_cunter;
 
 pub fn get_number_cores() -> Option<usize> {
     let sys = System::new();
@@ -31,11 +28,21 @@ pub fn get_cpu_usage(results: &mut HashMap<String, f64>) {
     }
 }
 
+#[cfg(not(target_os = "macos"))]
 pub fn get_cpu_cunter(results: &mut HashMap<String, f64>) {
-    #[cfg(target_os = "macos")]
-    get_apple_cpu_cunter(results);
+    let mut sys = System::new();
+    sys.refresh_cpu();
+
+    let vendor = sys.global_cpu_info().vendor_id();
     #[cfg(not(target_os = "macos"))]
-    amd::get_amd_cpu_cunter(results);
-    #[cfg(not(target_os = "macos"))]
-    get_intel_cpu_cunter(results);
+    if vendor == "GenuineIntel" {
+        intel::get_intel_cpu_cunter(results);
+    } else if vendor == "AuthenticAMD" {
+        amd::get_amd_cpu_cunter(results);
+    }
+}
+
+#[cfg(target_os = "macos")]
+pub fn get_cpu_cunter(results: &mut HashMap<String, f64>) {
+    apple::get_apple_cpu_cunter(results);
 }
