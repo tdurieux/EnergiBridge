@@ -1,3 +1,5 @@
+#![cfg(target_os = "windows")]
+
 use once_cell::sync::OnceCell;
 use std::{ffi::CString, sync::Once};
 use std::{

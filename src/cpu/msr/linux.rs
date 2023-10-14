@@ -1,18 +1,16 @@
+#![cfg(target_os = "linux")]
+
 use once_cell::sync::OnceCell;
 use std::{ffi::CString, sync::Once};
 use std::{
     fs::{File, OpenOptions},
 };
 
-#[cfg(target_os = "linux")]
 use std::io::Read;
-#[cfg(target_os = "linux")]
 use std::io::Seek;
-#[cfg(target_os = "linux")]
 use std::io::SeekFrom;
 
 
-#[cfg(target_os = "linux")]
 pub fn read_msr_on_core(msr: u32, core: u32) -> Result<u64, std::io::Error> {
     let mut file = File::open(format!("/dev/cpu/{}/msr", core))?;
 

@@ -5,16 +5,18 @@ mod process;
 
 use clap::Parser;
 
-use cpu::{get_cpu_cunter, get_cpu_usage};
-use gpu::get_gpu_cunter;
-use memory::get_memory_usage;
+use itertools::Itertools;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{stdout, Write};
-use std::process::Command;
 use std::process::{exit, Child};
+use std::process::{Command, Stdio};
 use std::thread::sleep;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+use cpu::{get_cpu_cunter, get_cpu_usage};
+use gpu::get_gpu_cunter;
+use memory::get_memory_usage;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -39,6 +41,7 @@ struct Args {
     gpu: bool,
 
     // the command to execute
+    #[clap(trailing_var_arg = true)]
     command: Vec<String>,
 }
 
@@ -61,7 +64,7 @@ fn main() {
         None => Box::new(stdout()) as Box<dyn Write>,
     };
 
-    let cmd = execute_command(args.command);
+    let cmd = execute_command(args.command, args.command_output);
 
     match cmd {
         Ok(mut child) => {
@@ -95,13 +98,16 @@ fn main() {
     }
 }
 
-fn execute_command(command: Vec<String>) -> std::io::Result<Child> {
+fn execute_command(command: Vec<String>, output: Option<String>) -> std::io::Result<Child> {
     if command.is_empty() {
         exit(1);
     }
     let mut cmd = Command::new(&command[0]);
     for arg in command.iter().skip(1) {
         cmd.arg(arg);
+    }
+    if output.is_some() {
+        cmd.stdout(Stdio::from(File::create(output.unwrap()).unwrap()));
     }
 
     return cmd.spawn();
@@ -132,9 +138,9 @@ fn print_results(
             .as_bytes(),
         )
         .expect("Failed to write results");
-    for (_, value) in results.iter() {
+    for key in results.keys().sorted() {
         output
-            .write_all(format!("{}{}", sep, value).as_bytes())
+            .write_all(format!("{}{}", sep, results[key]).as_bytes())
             .expect("Failed to write results");
     }
     output.write_all(b"\n").expect("Failed to write results");
@@ -144,7 +150,7 @@ fn print_header(results: &HashMap<String, f64>, sep: &str, output: &mut dyn Writ
     output
         .write_all(format!("Delta{}Time", sep).as_bytes())
         .expect("Failed to write header");
-    for (key, _value) in results.iter() {
+    for key in results.keys().sorted() {
         output
             .write_all(format!("{}{}", sep, key).as_bytes())
             .expect("Failed to write header");
