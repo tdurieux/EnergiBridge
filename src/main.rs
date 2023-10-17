@@ -12,7 +12,7 @@ use std::io::{stdout, Write};
 use std::process::{exit, Child};
 use std::process::{Command, Stdio};
 use std::thread::sleep;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use cpu::{get_cpu_cunter, get_cpu_usage};
 use gpu::get_gpu_cunter;
@@ -35,6 +35,10 @@ struct Args {
     /// Duration of the interval between two measurements in micoseconds
     #[arg(short, long, default_value_t = 100)]
     interval: u32,
+
+    /// Define the maximum duration of the execution of the command in seconds, set to -1 to disable
+    #[arg(short, long, default_value_t = -1)]
+    max_execution: i32,
 
     // enable to measure the GPU power consumption
     #[arg(short, long, default_value_t = false)]
@@ -68,12 +72,24 @@ fn main() {
 
     match cmd {
         Ok(mut child) => {
+            let start_time = Instant::now();
+            
             #[cfg(not(target_os = "macos"))]
             cpu::msr::start_rapl();
+
             collect(child.id(), &mut results);
             print_header(&results, sep, &mut output);
             let mut previous_time = SystemTime::now();
+
             loop {
+                if args.max_execution > 0
+                    && start_time.elapsed().as_secs() >= args.max_execution as u64
+                {
+                    // kill the process if it is still running
+                    child.kill().expect("Failed to kill child");
+                    print_results(previous_time, &mut results, sep, &mut output);
+                    exit(0);
+                }
                 let time_before = SystemTime::now();
                 print_results(previous_time, &mut results, sep, &mut output);
                 previous_time = SystemTime::now();
