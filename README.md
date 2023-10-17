@@ -50,7 +50,8 @@ cargo build;
 sudo chgrp -R msr /dev/cpu/*/msr;
 sudo chmod g+r /dev/cpu/*/msr;
 cargo build;
-sudo setcap cap_sys_rawio=ep target/debug/energy_bridge; # Any non-root program accessing the msr also needs the rawio capability
+# Any non-root program accessing the msr also needs the rawio capability, if you move the binary you should eecute this line again
+sudo setcap cap_sys_rawio=ep target/debug/energi_bridge; 
 ```
 
 ## Usage

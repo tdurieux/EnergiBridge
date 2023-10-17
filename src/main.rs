@@ -37,8 +37,8 @@ struct Args {
     interval: u32,
 
     /// Define the maximum duration of the execution of the command in seconds, set to -1 to disable
-    #[arg(short, long, default_value_t = -1)]
-    max_execution: i32,
+    #[arg(short, long, default_value_t = 0)]
+    max_execution: u32,
 
     // enable to measure the GPU power consumption
     #[arg(short, long, default_value_t = false)]
