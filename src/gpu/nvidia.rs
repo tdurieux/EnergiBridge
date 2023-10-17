@@ -11,6 +11,7 @@ pub struct GPUstat {
     memory_info: Result<MemoryInfo, NvmlError>,
     // fan_speed: Result<u32, NvmlError>,
     temperature: Result<u32, NvmlError>,
+    power: Result<u32, NvmlError>,
 }
 
 pub fn read_gpu_stat(device: &nvml_wrapper::Device) -> GPUstat {
@@ -20,6 +21,7 @@ pub fn read_gpu_stat(device: &nvml_wrapper::Device) -> GPUstat {
         memory_info: device.memory_info(),
         // fan_speed: device.fan_speed(0), // Currently only take one fan, will add more fan readings
         temperature: device.temperature(TemperatureSensor::Gpu),
+        power: device.power_usage(),
     };
 
     return gpustat;
@@ -65,6 +67,14 @@ pub fn dump_gpu_stat(device: nvml_wrapper::Device, results: &mut HashMap<String,
                 format!("GPU{}_TEMPERATURE", index).to_string(),
                 temperature.into(),
             );
+        }
+        Err(_) => {}
+    };
+
+    match gpustat.power {
+        Ok(power) => {
+            let key = format!("GPU{}_POWER", index).to_string();
+            results.insert(key, power.into());
         }
         Err(_) => {}
     };
