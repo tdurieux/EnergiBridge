@@ -1,6 +1,6 @@
 [package]
 name = "energibridge"
-version = "0.0.3"
+version = "0.0.4"
 edition = "2021"
 categories = ["os", "energy"]
 readme = "README.md"
