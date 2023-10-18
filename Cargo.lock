@@ -195,8 +195,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a26ae43d7bcc3b814de94796a5e736d4029efb0ee900c12e2d54c993ad1a1e07"
 
 [[package]]
-name = "energi_bridge"
-version = "0.0.2"
+name = "energibridge"
+version = "0.0.3"
 dependencies = [
  "clap",
  "itertools",
