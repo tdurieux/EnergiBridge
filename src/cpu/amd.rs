@@ -9,7 +9,6 @@ const AMD_MSR_FID: u32 = 0xC0010293;
 
 const AMD_ENERGY_UNIT_MASK: u32 = 0x1F00;
 
-
 pub fn get_amd_cpu_cunter(results: &mut HashMap<String, f64>) {
     #[cfg(target_os = "linux")]
     let nb_core = get_number_cores().unwrap() as u32;
@@ -44,7 +43,7 @@ pub fn get_amd_cpu_cunter(results: &mut HashMap<String, f64>) {
                 core_energy_raw as f64 * energy_unit_d,
             );
             results.insert(
-                format!("CPU_ENERGY (J)", core),
+                format!("CPU_ENERGY (J)"),
                 package_raw as f64 * energy_unit_d,
             );
         }
