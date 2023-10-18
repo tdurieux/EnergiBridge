@@ -1,0 +1,47 @@
+name: Compile
+
+on:
+  push:
+    branches: [main]
+jobs:
+  tests:
+    name: ${{ matrix.target }}
+    strategy:
+      matrix:
+        include:
+          - target: aarch64-unknown-linux-musl
+          - target: x86_64-unknown-linux-musl
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v3
+      - name: Get binary name
+        uses: dangdennis/toml-action@v1.3.0
+        id: read_cargo_toml
+        with:
+          file: "Cargo.toml"
+          field: "package.name"
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Setup rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          target: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v1
+        with:
+          cache-on-failure: true
+      - run: echo "RUSTFLAGS=${RUSTFLAGS} -C target-feature=+crt-static" >> "${GITHUB_ENV}"
+        if: endsWith(matrix.target, 'windows-msvc')
+      - name: Build target
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: true
+          command: build
+          args: --release --target ${{ matrix.target }} --locked
