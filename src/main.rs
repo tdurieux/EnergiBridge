@@ -45,7 +45,7 @@ struct Args {
     gpu: bool,
 
     // print the summary of the energy consumption
-    #[arg(short, long, default_value_t = false)]
+    #[arg(long, default_value_t = false)]
     summary: bool,
 
     // the command to execute
