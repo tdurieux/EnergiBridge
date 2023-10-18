@@ -221,19 +221,19 @@ pub fn get_intel_cpu_cunter(results: &mut HashMap<String, f64>) {
         let dram = read_msr_on_core(INTEL_MSR_RAPL_DRAM, 0).expect("failed to read DRAM");
 
         results.insert(
-            format!("DRAM_ENERGY (W)"),
+            format!("DRAM_ENERGY (J)"),
             dram as f64 * energy_unit_d,
         );
         results.insert(
-            format!("PACAKGE_ENERGY (W)"),
+            format!("PACAKGE_ENERGY (J)"),
             pkg as f64 * energy_unit_d,
         );
         results.insert(
-            format!("PP0_ENERGY (W)"),
+            format!("PP0_ENERGY (J)"),
             pp0 as f64 * energy_unit_d,
         );
         results.insert(
-            format!("PP1_ENERGY (W)"),
+            format!("PP1_ENERGY (J)"),
             pp1 as f64 * energy_unit_d,
         );
     }

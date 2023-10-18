@@ -44,6 +44,10 @@ struct Args {
     #[arg(short, long, default_value_t = false)]
     gpu: bool,
 
+    // print the summary of the energy consumption
+    #[arg(short, long, default_value_t = false)]
+    summary: bool,
+
     // the command to execute
     #[clap(trailing_var_arg = true)]
     command: Vec<String>,
@@ -54,13 +58,14 @@ fn main() {
     let args = Args::parse();
     let interval = Duration::from_millis(args.interval.into());
     let sep = args.separator.as_str();
+    let collect_gpu = args.gpu;
 
     if args.command.is_empty() {
         eprintln!("Usage: {} <command>", "EnergiBridge");
         exit(1);
     }
 
-    let mut results = HashMap::new();
+    let mut results: HashMap<String, f64> = HashMap::new();
     let mut output = match args.output {
         Some(ref path) => {
             Box::new(File::create(path).expect("Failed to open output file")) as Box<dyn Write>
@@ -73,14 +78,15 @@ fn main() {
     match cmd {
         Ok(mut child) => {
             let start_time = Instant::now();
-            
+
             #[cfg(not(target_os = "macos"))]
             cpu::msr::start_rapl();
 
-            collect(child.id(), &mut results);
+            collect(collect_gpu, child.id(), &mut results);
             print_header(&results, sep, &mut output);
             let mut previous_time = SystemTime::now();
-
+            let mut energy_array: f64 = 0 as f64;
+            let mut previous_results = results.clone();
             loop {
                 if args.max_execution > 0
                     && start_time.elapsed().as_secs() >= args.max_execution as u64
@@ -92,12 +98,36 @@ fn main() {
                 }
                 let time_before = SystemTime::now();
                 print_results(previous_time, &mut results, sep, &mut output);
+
+                if args.summary {
+                    if results.contains_key("CPU_POWER (Watts)") {
+                        let energy = results["CPU_POWER (Watts)"];
+                        energy_array += energy
+                            * (previous_time.elapsed().unwrap().as_millis() as f64 / 1000 as f64);
+                    } else if results.contains_key("SYSTEM_POWER (Watts)") {
+                        let energy = results["SYSTEM_POWER (Watts)"];
+                        energy_array += energy
+                            * (previous_time.elapsed().unwrap().as_millis() as f64 / 1000 as f64);
+                    } else if results.contains_key("CPU_ENERGY (J)") {
+                        let energy = results["CPU_ENERGY (J)"];
+                        let old_energy = previous_results["CPU_ENERGY (J)"];
+                        energy_array += old_energy - energy;
+                    }
+                }
                 previous_time = SystemTime::now();
-                collect(child.id(), &mut results);
+                previous_results = results.clone();
+                collect(collect_gpu, child.id(), &mut results);
 
                 match child.try_wait() {
                     Ok(Some(status)) => {
-                        print_results(previous_time, &mut results, sep, &mut output);
+                        // print_results(previous_time, &mut results, sep, &mut output);
+                        if energy_array > 0.0 && args.summary {
+                            println!(
+                                "Energy consumption in joules: {} for {}sec of execution.",
+                                energy_array,
+                                start_time.elapsed().as_secs_f32()
+                            );
+                        }
                         exit(status.code().unwrap());
                     }
                     Ok(None) => {
@@ -129,11 +159,13 @@ fn execute_command(command: Vec<String>, output: Option<String>) -> std::io::Res
     return cmd.spawn();
 }
 
-fn collect(pid: u32, results: &mut HashMap<String, f64>) {
+fn collect(collect_gpu: bool, pid: u32, results: &mut HashMap<String, f64>) {
     get_memory_usage(results);
     get_cpu_usage(results);
     get_cpu_cunter(results);
-    get_gpu_cunter(results);
+    if collect_gpu {
+        get_gpu_cunter(results);
+    }
     // get_process_usage(pid, results);
 }
 

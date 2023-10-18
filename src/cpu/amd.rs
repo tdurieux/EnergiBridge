@@ -40,11 +40,11 @@ pub fn get_amd_cpu_cunter(results: &mut HashMap<String, f64>) {
             results.insert(format!("CORE{}_FREQ (MHZ)", core), freq_mhz);
             results.insert(format!("CORE{}_PSTATE", core), (pstate & 0x07) as f64);
             results.insert(
-                format!("CORE{}_ENERGY (W)", core),
+                format!("CORE{}_ENERGY (J)", core),
                 core_energy_raw as f64 * energy_unit_d,
             );
             results.insert(
-                format!("PACAKGE{}_ENERGY (W)", core),
+                format!("CPU_ENERGY (J)", core),
                 package_raw as f64 * energy_unit_d,
             );
         }

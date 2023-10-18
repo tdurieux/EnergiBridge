@@ -6,9 +6,16 @@ use smc::SMC;
 #[cfg(target_os = "macos")]
 pub fn get_apple_cpu_cunter(results: &mut HashMap<String, f64>) {
     let smc = SMC::new().unwrap();
-    match smc.read_key::<f32>("PSTR".into()) {
+    // does not work on M1
+    match smc.read_key::<f32>("PCTR".into()) {
         Ok(res) => {
             results.insert("CPU_POWER (Watts)".to_string(), res.into());
+        }
+        _ => {}
+    }
+    match smc.read_key::<f32>("PSTR".into()) {
+        Ok(res) => {
+            results.insert("SYSTEM_POWER (Watts)".to_string(), res.into());
         }
         _ => {}
     }
