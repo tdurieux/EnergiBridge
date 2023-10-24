@@ -1,18 +1,21 @@
-# EnergyBridge
+# EnergiBridge
 
 [![Release](https://github.com/tdurieux/EnergiBridge/actions/workflows/release.yml/badge.svg)](https://github.com/tdurieux/EnergiBridge/actions/workflows/release.yml)
 
-This script is designed to collect resource usage data for a command and output it in a CSV format.
+
+Energibridge is a cross-platform energy measurement utility that provides support for Linux, Windows, and MacOS, as well as Intel, AMD, and Apple ARM CPU architectures.
+
+This tool is designed to collect resource usage data for a command to execute and to output the data in a CSV format.
 
 | OS      | Intel CPU | AMD CPU | M1 CPU | Intel GPU | Nvidia GPU | AMD GPU | M1 GPU |
 | ------- | --------- | ------- | ------ | --------- | ---------- | ------- | ------ |
-| Linux   | ✅        | ✅      |        |           | ✅         |         |        |
-| Windows | ✅        | ✅      |        |           | ✅         |         |        |
-| Mac     |           |         | ✅     |           |            |         | ✅     |
+| Linux   | ✅        |   ✅    |        |           |    ✅      |         |        |
+| Windows | ✅        |   ✅    |        |           |    ✅      |         |        |
+| Mac     | ✅        |         |   ✅   |    ✅     |            |    ✅   |   ✅   |
 
 ## Requirements
 
-Depending on your hardware you need different dependencies
+Depending on your hardware you need different dependencies.
 
 ### NVIDIA
 
@@ -89,9 +92,9 @@ Options:
   -m, --max-execution <MAX_EXECUTION>
           Define the maximum duration of the execution of the command in seconds, set to -1 to disable [default: 0]
   -g, --gpu
-
+          Get GPU usage data
       --summary
-
+          Provide a summary of the total energy consumption of running the command
   -h, --help
           Print help
   -V, --version
