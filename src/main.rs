@@ -13,6 +13,7 @@ use std::process::{exit, Child};
 use std::process::{Command, Stdio};
 use std::thread::sleep;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use sysinfo::{CpuExt, System, SystemExt, RefreshKind, ProcessExt};
 
 use cpu::{get_cpu_cunter, get_cpu_usage};
 use gpu::get_gpu_cunter;
@@ -33,7 +34,7 @@ struct Args {
     command_output: Option<String>,
 
     /// Duration of the interval between two measurements in micoseconds
-    #[arg(short, long, default_value_t = 100)]
+    #[arg(short, long, default_value_t = 200)]
     interval: u32,
 
     /// Define the maximum duration of the execution of the command in seconds, set to -1 to disable
@@ -65,7 +66,10 @@ fn main() {
         exit(1);
     }
 
+    let mut sys = System::new_all();
     let mut results: HashMap<String, f64> = HashMap::new();
+    collect(&mut sys, collect_gpu, 0, &mut results);
+
     let mut output = match args.output {
         Some(ref path) => {
             Box::new(File::create(path).expect("Failed to open output file")) as Box<dyn Write>
@@ -82,7 +86,7 @@ fn main() {
             #[cfg(not(target_os = "macos"))]
             cpu::msr::start_rapl();
 
-            collect(collect_gpu, child.id(), &mut results);
+            collect(&mut sys, collect_gpu, child.id(), &mut results);
             print_header(&results, sep, &mut output);
             let mut previous_time = SystemTime::now();
             let mut energy_array: f64 = 0 as f64;
@@ -116,7 +120,7 @@ fn main() {
                 }
                 previous_time = SystemTime::now();
                 previous_results = results.clone();
-                collect(collect_gpu, child.id(), &mut results);
+                collect(&mut sys, collect_gpu, child.id(), &mut results);
 
                 match child.try_wait() {
                     Ok(Some(status)) => {
@@ -159,14 +163,14 @@ fn execute_command(command: Vec<String>, output: Option<String>) -> std::io::Res
     return cmd.spawn();
 }
 
-fn collect(collect_gpu: bool, pid: u32, results: &mut HashMap<String, f64>) {
-    get_memory_usage(results);
-    get_cpu_usage(results);
-    get_cpu_cunter(results);
+fn collect(sys: &mut System, collect_gpu: bool, pid: u32, results: &mut HashMap<String, f64>) {
+    get_memory_usage(sys, results);
+    get_cpu_usage(sys, results);
+    get_cpu_cunter(sys, results);
     if collect_gpu {
         get_gpu_cunter(results);
     }
-    // get_process_usage(pid, results);
+    // get_process_usage(sys, pid, results);
 }
 
 fn print_results(

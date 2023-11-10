@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use sysinfo::{System};
 
 use super::{get_number_cores, msr::read_msr_on_core};
 
@@ -9,9 +10,9 @@ const AMD_MSR_FID: u32 = 0xC0010293;
 
 const AMD_ENERGY_UNIT_MASK: u32 = 0x1F00;
 
-pub fn get_amd_cpu_cunter(results: &mut HashMap<String, f64>) {
+pub fn get_amd_cpu_cunter(sys: &mut System, results: &mut HashMap<String, f64>) {
     #[cfg(target_os = "linux")]
-    let nb_core = get_number_cores().unwrap() as u32;
+    let nb_core = get_number_cores(sys).unwrap() as u32;
     #[cfg(target_os = "windows")]
     let nb_core = 1;
 

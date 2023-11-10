@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 use sysinfo::{System, SystemExt};
 
-pub fn get_memory_usage(results: &mut HashMap<String, f64>) {
-    let mut sys = System::new();
+pub fn get_memory_usage(sys: &mut System, results: &mut HashMap<String, f64>) {
     sys.refresh_memory();
 
     results.insert("TOTAL_MEMORY".to_string(), sys.total_memory() as f64);
