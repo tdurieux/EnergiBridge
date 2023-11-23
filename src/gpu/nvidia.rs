@@ -73,7 +73,7 @@ pub fn dump_gpu_stat(device: nvml_wrapper::Device, results: &mut HashMap<String,
 
     match gpustat.power {
         Ok(power) => {
-            let key = format!("GPU{}_POWER", index).to_string();
+            let key = format!("GPU{}_POWER (mWatts)", index).to_string();
             results.insert(key, power.into());
         }
         Err(_) => {}
