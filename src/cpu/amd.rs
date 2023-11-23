@@ -10,7 +10,7 @@ const AMD_MSR_FID: u32 = 0xC0010293;
 
 const AMD_ENERGY_UNIT_MASK: u32 = 0x1F00;
 
-pub fn get_amd_cpu_cunter(sys: &mut System, results: &mut HashMap<String, f64>) {
+pub fn get_amd_cpu_cunter(sys: &mut System, results: &mut HashMap<String, f64>, time_delta: u32) {
     #[cfg(target_os = "linux")]
     let nb_core = get_number_cores(sys).unwrap() as u32;
     #[cfg(target_os = "windows")]
@@ -43,6 +43,12 @@ pub fn get_amd_cpu_cunter(sys: &mut System, results: &mut HashMap<String, f64>) 
                 format!("CORE{}_ENERGY (J)", core),
                 core_energy_raw as f64 * energy_unit_d,
             );
+            if results.contains_key("CPU_ENERGY (J)") {
+                results.insert(
+                    format!("CORE_ENERGY (W)", ),
+                    (results["CPU_ENERGY (J)"].last() - package_raw as f64 * energy_unit_d) * (1000 / time_delta) as f64,
+                );
+            }
             results.insert(
                 format!("CPU_ENERGY (J)"),
                 package_raw as f64 * energy_unit_d,

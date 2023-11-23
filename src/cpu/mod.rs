@@ -26,7 +26,7 @@ pub fn get_cpu_usage(sys: &mut System, results: &mut HashMap<String, f64>) {
 }
 
 #[cfg(not(target_os = "macos"))]
-pub fn get_cpu_cunter(sys: &mut System, results: &mut HashMap<String, f64>) {
+pub fn get_cpu_cunter(sys: &mut System, results: &mut HashMap<String, f64>, time_delta: u32) {
     sys.refresh_cpu();
 
     let vendor = sys.global_cpu_info().vendor_id();
@@ -34,11 +34,11 @@ pub fn get_cpu_cunter(sys: &mut System, results: &mut HashMap<String, f64>) {
     if vendor == "GenuineIntel" {
         intel::get_intel_cpu_cunter(results);
     } else if vendor == "AuthenticAMD" {
-        amd::get_amd_cpu_cunter(sys, results);
+        amd::get_amd_cpu_cunter(sys, results, time_delta);
     }
 }
 
 #[cfg(target_os = "macos")]
-pub fn get_cpu_cunter(sys: &mut System, results: &mut HashMap<String, f64>) {
+pub fn get_cpu_cunter(sys: &mut System, results: &mut HashMap<String, f64>, time_delta: u32) {
     apple::get_apple_cpu_cunter(results);
 }
