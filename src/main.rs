@@ -68,7 +68,7 @@ fn main() {
 
     let mut sys = System::new_all();
     let mut results: HashMap<String, f64> = HashMap::new();
-    collect(&mut sys, collect_gpu, 0, &mut results);
+    collect(&mut sys, collect_gpu, 0, &mut results, 0);
 
     let mut output = match args.output {
         Some(ref path) => {
@@ -86,7 +86,7 @@ fn main() {
             #[cfg(not(target_os = "macos"))]
             cpu::msr::start_rapl();
 
-            collect(&mut sys, collect_gpu, child.id(), &mut results);
+            collect(&mut sys, collect_gpu, child.id(), &mut results, 0);
             print_header(&results, sep, &mut output);
             let mut previous_time = SystemTime::now();
             let mut energy_array: f64 = 0 as f64;
@@ -118,9 +118,10 @@ fn main() {
                         energy_array += old_energy - energy;
                     }
                 }
+                time_delta = previous_time - start_time;
                 previous_time = SystemTime::now();
                 previous_results = results.clone();
-                collect(&mut sys, collect_gpu, child.id(), &mut results);
+                collect(&mut sys, collect_gpu, child.id(), &mut results, time_delta);
 
                 match child.try_wait() {
                     Ok(Some(status)) => {
@@ -163,10 +164,10 @@ fn execute_command(command: Vec<String>, output: Option<String>) -> std::io::Res
     return cmd.spawn();
 }
 
-fn collect(sys: &mut System, collect_gpu: bool, pid: u32, results: &mut HashMap<String, f64>) {
+fn collect(sys: &mut System, collect_gpu: bool, pid: u32, results: &mut HashMap<String, f64>, time_delta: u32) {
     get_memory_usage(sys, results);
     get_cpu_usage(sys, results);
-    get_cpu_cunter(sys, results);
+    get_cpu_cunter(sys, results, time_delta);
     if collect_gpu {
         get_gpu_cunter(results);
     }
