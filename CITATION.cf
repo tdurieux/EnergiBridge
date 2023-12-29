@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Sallou"
+  given-names: "June"
+  orcid: "https://orcid.org/0000-0003-2230-9351"
+- family-names: "Cruz"
+  given-names: "Luís"
+  orcid: "https://orcid.org/0000-0002-1615-355X"
+- family-names: "Durieux"
+  given-names: "Thomas"
+  orcid: "https://orcid.org/0000-0002-1996-6134"
+title: "EnergiBridge: Empowering Software Sustainability through Cross-Platform Energy Measurement"
+version: 1.0.0
+doi: 10.48550/arXiv.2312.13897
+date-released: 2023-12-21
+url: "https://github.com/tdurieux/EnergiBridge"
