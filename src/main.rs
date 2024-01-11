@@ -37,7 +37,7 @@ struct Args {
     #[arg(short, long, default_value_t = 200)]
     interval: u32,
 
-    /// Define the maximum duration of the execution of the command in seconds, set to -1 to disable
+    /// Define the maximum duration of the execution of the command in seconds, set to 0 to disable
     #[arg(short, long, default_value_t = 0)]
     max_execution: u32,
 
