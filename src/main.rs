@@ -13,7 +13,7 @@ use std::process::{exit, Child};
 use std::process::{Command, Stdio};
 use std::thread::sleep;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-use sysinfo::{CpuExt, System, SystemExt, RefreshKind, ProcessExt};
+use sysinfo::{CpuExt, ProcessExt, RefreshKind, System, SystemExt};
 
 use cpu::{get_cpu_cunter, get_cpu_usage};
 use gpu::get_gpu_cunter;
@@ -66,7 +66,16 @@ fn main() {
         exit(1);
     }
 
+    if interval < System::MINIMUM_CPU_UPDATE_INTERVAL {
+        eprintln!(
+            "[WARNING] Interval must be at least {}ms to accurating measure CPU usage.",
+            System::MINIMUM_CPU_UPDATE_INTERVAL.as_millis()
+        );
+    }
+
     let mut sys = System::new_all();
+    sys.refresh_all();
+    std::thread::sleep(System::MINIMUM_CPU_UPDATE_INTERVAL);
     let mut results: HashMap<String, f64> = HashMap::new();
     collect(&mut sys, collect_gpu, 0, &mut results);
 

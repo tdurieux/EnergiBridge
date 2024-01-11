@@ -225,7 +225,7 @@ pub fn get_intel_cpu_cunter(results: &mut HashMap<String, f64>) {
             dram as f64 * energy_unit_d,
         );
         results.insert(
-            format!("PACAKGE_ENERGY (J)"),
+            format!("PACKAGE_ENERGY (J)"),
             pkg as f64 * energy_unit_d,
         );
         results.insert(
