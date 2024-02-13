@@ -25,27 +25,28 @@ Depending on your hardware you need different dependencies.
 
 ### Windows
 
-Install LibreHardwareMonitor to access the CPU registry
+Install LibreHardwareMonitor to access the CPU registry.
 
+
+In an elevated (Administrator) command line (e.g. cmd.exe):
 ```
 Create:
-
-`sc create rapl type= kernel binPath= "<path_to_LibreHardwareMonitor.sys>"`
+sc create rapl type=kernel binPath="<absolute_path_to_LibreHardwareMonitor.sys>"
 
 Start:
-
-`sc start rapl`
+sc start rapl
 
 Stop:
-
-`sc stop rapl`
+sc stop rapl
 
 Delete:
+sc delete rapl
 
-`sc delete rapl`
-
-cargo build;
+Build:
+cargo build -r
 ```
+
+> For PowerShell use `sc.exe` instead of `sc`.
 
 ### Linux
 
