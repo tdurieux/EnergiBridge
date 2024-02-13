@@ -73,6 +73,9 @@ fn main() {
         );
     }
 
+    #[cfg(target_os = "windows")]
+    cpu::msr::windows::start_rapl_impl();
+
     let mut sys = System::new_all();
     sys.refresh_all();
     std::thread::sleep(System::MINIMUM_CPU_UPDATE_INTERVAL);
