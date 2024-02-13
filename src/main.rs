@@ -153,8 +153,8 @@ fn main() {
                 }
             }
         }
-        Err(_) => {
-            eprintln!("Failed to execute command.");
+        Err(err) => {
+            eprintln!("Failed to execute command: {}", err);
             exit(1);
         }
     }
