@@ -73,8 +73,8 @@ fn main() {
         );
     }
 
-    #[cfg(target_os = "windows")]
-    cpu::msr::windows::start_rapl_impl();
+    #[cfg(not(target_os = "macos"))]
+    cpu::msr::start_rapl();
 
     let mut sys = System::new_all();
     sys.refresh_all();
@@ -94,9 +94,6 @@ fn main() {
     match cmd {
         Ok(mut child) => {
             let start_time = Instant::now();
-
-            #[cfg(not(target_os = "macos"))]
-            cpu::msr::start_rapl();
 
             collect(&mut sys, collect_gpu, child.id(), &mut results);
             print_header(&results, sep, &mut output);
