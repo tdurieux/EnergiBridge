@@ -73,6 +73,9 @@ fn main() {
         );
     }
 
+    #[cfg(not(target_os = "macos"))]
+    cpu::msr::start_rapl();
+
     let mut sys = System::new_all();
     sys.refresh_all();
     std::thread::sleep(System::MINIMUM_CPU_UPDATE_INTERVAL);
@@ -91,9 +94,6 @@ fn main() {
     match cmd {
         Ok(mut child) => {
             let start_time = Instant::now();
-
-            #[cfg(not(target_os = "macos"))]
-            cpu::msr::start_rapl();
 
             collect(&mut sys, collect_gpu, child.id(), &mut results);
             print_header(&results, sep, &mut output);
@@ -150,8 +150,8 @@ fn main() {
                 }
             }
         }
-        Err(_) => {
-            eprintln!("Failed to execute command.");
+        Err(err) => {
+            eprintln!("Failed to execute command: {}", err);
             exit(1);
         }
     }
