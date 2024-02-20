@@ -100,14 +100,13 @@ fn main() {
             let mut previous_time = SystemTime::now();
             let mut energy_array: f64 = 0 as f64;
             let mut previous_results = results.clone();
-            loop {
+            let exit_code = loop {
                 if args.max_execution > 0
                     && start_time.elapsed().as_secs() >= args.max_execution as u64
                 {
                     // kill the process if it is still running
                     child.kill().expect("Failed to kill child");
-                    print_results(previous_time, &mut results, sep, &mut output);
-                    exit(0);
+                    break 0;
                 }
                 let time_before = SystemTime::now();
                 print_results(previous_time, &mut results, sep, &mut output);
@@ -124,7 +123,7 @@ fn main() {
                     } else if results.contains_key("CPU_ENERGY (J)") {
                         let energy = results["CPU_ENERGY (J)"];
                         let old_energy = previous_results["CPU_ENERGY (J)"];
-                        energy_array += old_energy - energy;
+                        energy_array += energy - old_energy;
                     }
                 }
                 previous_time = SystemTime::now();
@@ -134,21 +133,25 @@ fn main() {
                 match child.try_wait() {
                     Ok(Some(status)) => {
                         // print_results(previous_time, &mut results, sep, &mut output);
-                        if energy_array > 0.0 && args.summary {
-                            println!(
-                                "Energy consumption in joules: {} for {}sec of execution.",
-                                energy_array,
-                                start_time.elapsed().as_secs_f32()
-                            );
-                        }
-                        exit(status.code().unwrap());
+                        break status.code().unwrap();
                     }
                     Ok(None) => {
                         sleep(interval - time_before.elapsed().unwrap());
                     }
                     Err(e) => println!("Error waiting: {}", e),
                 }
+            };
+
+            print_results(previous_time, &mut results, sep, &mut output);
+            if energy_array > 0.0 && args.summary {
+                println!(
+                    "Energy consumption in joules: {} for {} sec of execution.",
+                    energy_array,
+                    start_time.elapsed().as_secs_f32()
+                );
             }
+
+            exit(exit_code);
         }
         Err(err) => {
             eprintln!("Failed to execute command: {}", err);
