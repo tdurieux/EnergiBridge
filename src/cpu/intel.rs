@@ -222,19 +222,19 @@ pub fn get_intel_cpu_cunter(results: &mut HashMap<String, f64>) {
 
         results.insert(
             format!("DRAM_ENERGY (J)"),
-            dram as f64 * energy_unit_d,
+            dram as f64 * energy_unit_d / UJ_TO_J_FACTOR,
         );
         results.insert(
             format!("PACKAGE_ENERGY (J)"),
-            pkg as f64 * energy_unit_d,
+            pkg as f64 * energy_unit_d / UJ_TO_J_FACTOR,
         );
         results.insert(
             format!("PP0_ENERGY (J)"),
-            pp0 as f64 * energy_unit_d,
+            pp0 as f64 * energy_unit_d / UJ_TO_J_FACTOR,
         );
         results.insert(
             format!("PP1_ENERGY (J)"),
-            pp1 as f64 * energy_unit_d,
+            pp1 as f64 * energy_unit_d / UJ_TO_J_FACTOR,
         );
     }
 }

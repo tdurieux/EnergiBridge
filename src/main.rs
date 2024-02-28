@@ -124,6 +124,10 @@ fn main() {
                         let energy = results["CPU_ENERGY (J)"];
                         let old_energy = previous_results["CPU_ENERGY (J)"];
                         energy_array += energy - old_energy;
+                    } else if results.contains_key("PACKAGE_ENERGY (J)") {
+                        let energy = results["PACKAGE_ENERGY (J)"];
+                        let old_energy = previous_results["PACKAGE_ENERGY (J)"];
+                        energy_array += energy - old_energy;
                     }
                 }
                 previous_time = SystemTime::now();
