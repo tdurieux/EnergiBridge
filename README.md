@@ -1,6 +1,7 @@
 # EnergiBridge
 
-[![Release](https://github.com/tdurieux/EnergiBridge/actions/workflows/release.yml/badge.svg)](https://github.com/tdurieux/EnergiBridge/actions/workflows/release.yml)
+[![Release](https://github.com/tdurieux/EnergiBridge/actions/workflows/release.yml/badge.svg)](https://github.com/tdurieux/EnergiBridge/actions/workflows/release.yml) [![GitHub Release](https://img.shields.io/github/v/release/tdurieux/EnergiBridge)](https://github.com/tdurieux/EnergiBridge/releases)
+
 
 
 Energibridge is a cross-platform energy measurement utility that provides support for Linux, Windows, and MacOS, as well as Intel, AMD, and Apple ARM CPU architectures.
