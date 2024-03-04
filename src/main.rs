@@ -15,6 +15,7 @@ use std::thread::sleep;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use sysinfo::{CpuExt, ProcessExt, RefreshKind, System, SystemExt};
 
+// TODO: rename from french(?) "cunter" to english "counter"
 use cpu::{get_cpu_cunter, get_cpu_usage};
 use gpu::get_gpu_cunter;
 use memory::get_memory_usage;
@@ -68,7 +69,7 @@ fn main() {
 
     if interval < System::MINIMUM_CPU_UPDATE_INTERVAL {
         eprintln!(
-            "[WARNING] Interval must be at least {}ms to accurating measure CPU usage.",
+            "[WARNING] Interval must be at least {}ms to accurately measure CPU usage.",
             System::MINIMUM_CPU_UPDATE_INTERVAL.as_millis()
         );
     }
