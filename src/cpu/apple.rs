@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use smc::SMC;
 
 #[cfg(target_os = "macos")]
-pub fn get_apple_cpu_cunter(results: &mut HashMap<String, f64>) {
+pub fn get_apple_cpu_counter(results: &mut HashMap<String, f64>) {
     let smc = SMC::new().unwrap();
     // does not work on M1
     match smc.read_key::<f32>("PCTR".into()) {

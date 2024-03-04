@@ -15,8 +15,8 @@ use std::thread::sleep;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use sysinfo::{CpuExt, ProcessExt, RefreshKind, System, SystemExt};
 
-use cpu::{get_cpu_cunter, get_cpu_usage};
-use gpu::get_gpu_cunter;
+use cpu::{get_cpu_counter, get_cpu_usage};
+use gpu::get_gpu_counter;
 use memory::get_memory_usage;
 
 #[derive(Parser, Debug)]
@@ -68,7 +68,7 @@ fn main() {
 
     if interval < System::MINIMUM_CPU_UPDATE_INTERVAL {
         eprintln!(
-            "[WARNING] Interval must be at least {}ms to accurating measure CPU usage.",
+            "[WARNING] Interval must be at least {}ms to accurately measure CPU usage.",
             System::MINIMUM_CPU_UPDATE_INTERVAL.as_millis()
         );
     }
@@ -182,9 +182,9 @@ fn execute_command(command: Vec<String>, output: Option<String>) -> std::io::Res
 fn collect(sys: &mut System, collect_gpu: bool, pid: u32, results: &mut HashMap<String, f64>) {
     get_memory_usage(sys, results);
     get_cpu_usage(sys, results);
-    get_cpu_cunter(sys, results);
+    get_cpu_counter(sys, results);
     if collect_gpu {
-        get_gpu_cunter(results);
+        get_gpu_counter(results);
     }
     // get_process_usage(sys, pid, results);
 }

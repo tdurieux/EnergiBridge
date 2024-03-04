@@ -94,7 +94,7 @@ pub fn dump_all_gpu_stats(
     return Ok(());
 }
 
-pub fn get_nvidia_gpu_cunter(results: &mut HashMap<String, f64>) {
+pub fn get_nvidia_gpu_counter(results: &mut HashMap<String, f64>) {
     match NVML::init() {
         Ok(nvml) => dump_all_gpu_stats(&nvml, results).unwrap(),
         Err(_) => {
