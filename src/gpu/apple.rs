@@ -4,7 +4,7 @@ use smc::SMC;
 use std::collections::HashMap;
 
 #[cfg(target_os = "macos")]
-pub fn get_apple_gpu_cunter(results: &mut HashMap<String, f64>) {
+pub fn get_apple_gpu_counter(results: &mut HashMap<String, f64>) {
     let smc = SMC::new().unwrap();
     for key in [
         // Intel

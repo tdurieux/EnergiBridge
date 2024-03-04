@@ -201,7 +201,7 @@ pub fn read_power_limit(file_path: String) -> f64 {
     return reading_as_float(&limit) / UJ_TO_J_FACTOR;
 }
 
-pub fn get_intel_cpu_cunter(results: &mut HashMap<String, f64>) {
+pub fn get_intel_cpu_counter(results: &mut HashMap<String, f64>) {
     // --- Read using Power Capping Framework (Linux only) ---
     // let zone = setup_rapl_data();
     // let start_time = Instant::now();
