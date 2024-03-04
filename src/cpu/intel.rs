@@ -26,8 +26,7 @@ const INTEL_POWER_UNIT_OFFSET: u32 = 0; // Offset 0
 
 pub fn get_intel_cpu_counter(results: &mut HashMap<String, f64>) {
     unsafe {
-        // --- Read using MSR ---
-
+        // --- Read units ---
         // TODO: these values are constant, read them once and store them
         // The MSR only store integer values, but they represent floating point values.
         // The INTEL_MSR_RAPL_POWER_UNIT MSR contains the units for the RAPL MSRs for a specific intel chip.
@@ -37,11 +36,10 @@ pub fn get_intel_cpu_counter(results: &mut HashMap<String, f64>) {
         // First, we extract the individual units using the masks and offsets.
         // Then we convert them to floating point values using the formula 0.5^x.
         // See Section 14.9.1 of the Intel Architectures Software Developer's Manual (Vol 3B) for more information.
-
         let energy_unit: u64 = (core_energy_units & INTEL_ENGERY_UNIT_MASK) >> INTEL_ENGERY_UNIT_OFFSET;
         let energy_unit_d = 0.5f64.powf(energy_unit as f64);
 
-        // Read the RAPL MSRs
+        // --- Read values ---
         // PP0 = CPU cores energy consumption
         let pp0 = read_msr_on_core(INTEL_MSR_RAPL_PP0, 0).expect("failed to read PP0");
         // PP1 = Integrated GPU energy consumption
@@ -52,6 +50,7 @@ pub fn get_intel_cpu_counter(results: &mut HashMap<String, f64>) {
         // DRAM = Energy consumed by the DRAM for the chip's memory controller.
         let dram = read_msr_on_core(INTEL_MSR_RAPL_DRAM, 0).expect("failed to read DRAM");
         
+        // --- Convert & store ---
         // convert the integer values to floating point values using the energy unit
         // and store them in the results hashmap
         results.insert(
