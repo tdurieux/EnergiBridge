@@ -5,10 +5,12 @@ from extract_code import *
 import matplotlib.pyplot as plt
 
 
-def extract_power(dataset, cumulative=False):
+def extract_time_and_power(data, cumulative=False):
+    #get rid of the first row
+    data = data[1:, :]
     # keep only the power data and delta time
-    time = dataset[:, 0]
-    power = dataset[:, 27]
+    time = data[:, 0]
+    power = data[:, 27]
     # accumulate the time
     if cumulative:
         time = np.cumsum(time) / 1_000
@@ -39,8 +41,7 @@ def make_time_series_plot(time_power, cumulative=False):
     plt.show()
 
 
-
-def run(program=None):
+def run(program=None, cumulative=False):
     if program is None:
         extract_and_write_code(notebook_path, start_marker, end_marker)
     else:
@@ -55,17 +56,16 @@ def run(program=None):
     # remove the temporary file
     os.remove('temp.py')
     # get data from temp.csv with numpy and skip the first line
-    data = np.genfromtxt('temp.csv', delimiter=',', skip_header=1)
+    data = np.genfromtxt('temp.csv', delimiter=',')
     # remove the temporary file
     #os.remove('temp.csv')
     # get power from the data
-    res = extract_power(data)
-    return res
+    return data
 
 
 def test_run():
     data = np.genfromtxt('temp.csv', delimiter=',', skip_header=1)
-    res = extract_power(data, cumulative=True)
+    res = extract_time_and_power(data, cumulative=True)
     make_time_series_plot(res, cumulative=True)
     print(res)
 
