@@ -13,7 +13,7 @@ use std::process::{exit, Child};
 use std::process::{Command, Stdio};
 use std::thread::sleep;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-use sysinfo::{CpuExt, ProcessExt, RefreshKind, System, SystemExt};
+use sysinfo::{ProcessExt, System, SystemExt};
 
 use cpu::{get_cpu_counter, get_cpu_usage};
 use gpu::get_gpu_counter;
@@ -179,7 +179,7 @@ fn execute_command(command: Vec<String>, output: Option<String>) -> std::io::Res
     return cmd.spawn();
 }
 
-fn collect(sys: &mut System, collect_gpu: bool, pid: u32, results: &mut HashMap<String, f64>) {
+fn collect(sys: &mut System, collect_gpu: bool, _pid: u32, results: &mut HashMap<String, f64>) {
     get_memory_usage(sys, results);
     get_cpu_usage(sys, results);
     get_cpu_counter(sys, results);
