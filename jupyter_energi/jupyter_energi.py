@@ -2,20 +2,42 @@ import subprocess
 import os
 import numpy as np
 from extract_code import *
+import matplotlib.pyplot as plt
 
 
-def extract_power(data):
-    total_res = []
+def extract_power(dataset, cumulative=False):
+    # keep only the power data and delta time
+    time = dataset[:, 0]
+    power = dataset[:, 27]
+    # accumulate the time
+    if cumulative:
+        time = np.cumsum(time) / 1_000
+    # make diff of power
+    power = np.diff(power)
+    # insert 0 at the beginning
+    power = np.insert(power, 0, 0)
+    if cumulative:
+        power = np.cumsum(power)
+    power = power[0:-1]
+    time = time[0:-1]
+    #make numpy array from time and power
+    res = np.column_stack((time, power))
+    return res
 
-    power = data[:, 26]
-    delta = data[:, 0]
-    res = 0
-    for i in range(0, len(power)):
-        res += power[i] * (delta[i] / 1_000)
-    print(res)
-    total_res.append(res)
 
-    return total_res
+def make_time_series_plot(time_power, cumulative=False):
+    time = time_power[:, 0]
+    power = time_power[:, 1]
+    if not cumulative:
+        # multiply power usage by delta time to get energy usage
+        power = power * (time / 100)
+        time = np.cumsum(time) / 100
+    plt.plot(time, power)
+    plt.xlabel('Time (s)')
+    plt.ylabel('Power (W)')
+    plt.title('Power vs Time')
+    plt.show()
+
 
 
 def run(program=None):
@@ -37,9 +59,13 @@ def run(program=None):
     # remove the temporary file
     #os.remove('temp.csv')
     # get power from the data
-    power = extract_power(data)
+    res = extract_power(data)
+    return res
 
-    return power
 
-
+def test_run():
+    data = np.genfromtxt('temp.csv', delimiter=',', skip_header=1)
+    res = extract_power(data, cumulative=True)
+    make_time_series_plot(res, cumulative=True)
+    print(res)
 
