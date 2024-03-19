@@ -1,6 +1,7 @@
 import subprocess
 import os
 import numpy as np
+from extract_code import *
 
 
 def extract_power(data):
@@ -17,9 +18,13 @@ def extract_power(data):
     return total_res
 
 
-def run(program):
-    with open('temp.py', 'w') as f:
-        f.write(program)
+def run(program=None):
+    if program is None:
+        extract_and_write_code(notebook_path, start_marker, end_marker)
+    else:
+        with open('temp.py', 'w') as f:
+            f.write(program)
+
     # run the temporary file with energibridge.exe as admin
     res = subprocess.run(['energibridge.exe', '-o', 'temp.csv', '--summary', 'py', 'temp.py'], capture_output=True,
                   text=True)

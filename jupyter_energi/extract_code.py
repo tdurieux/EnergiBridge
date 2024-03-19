@@ -23,13 +23,13 @@ def extract_and_write_code(notebook_path, start_marker, end_marker):
                     extracted_code[-1] = extracted_code[-1].rsplit(end_marker, 1)[0]
     
     # Write extracted code to a new Python file(temp.py)
-    with open('jupyter_energi/temp.py', 'w', encoding='utf-8') as temp_file:
+    with open('temp.py', 'w', encoding='utf-8') as temp_file:
         temp_file.write('\n'.join(extracted_code))
 
 
 #params
-notebook_path = 'jupyter_energi\Demo.ipynb'
+notebook_path = 'Demo.ipynb'
 start_marker = '#EnergiBridgeStart'
 end_marker = '#EnergiBridgeStop'
 
-extract_and_write_code(notebook_path, start_marker, end_marker)
+
