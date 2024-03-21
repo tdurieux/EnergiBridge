@@ -70,11 +70,15 @@ def run_mac(program=None, cumulative=False):
     else:
         with open('temp.py', 'w') as f:
             f.write(program)
-    
-    subprocess.run(['chmod', '+x', '/Users/piaasbjornsen/Documents/V2024/SSE/EnergiBridgeWrapper/jupyter_energi/temp.py'])
+
+    current_directory = os.getcwd()
+    path = os.path.join(current_directory, 'temp.py')
+
+    # path ='/Users/piaasbjornsen/Documents/V2024/SSE/EnergiBridgeWrapper/jupyter_energi/temp.py'
+    subprocess.run(['chmod', '+x', path ])
     # Run the temporary file with energibridge as a subprocess
     energibridge_executable = "../target/release/energibridge"
-    command = [energibridge_executable, '-o', '../temp.csv', '--summary', 'python3','/Users/piaasbjornsen/Documents/V2024/SSE/EnergiBridgeWrapper/jupyter_energi/temp.py']
+    command = [energibridge_executable, '-o', '../temp.csv', '--summary', 'python3', path]
     result = subprocess.run((command), capture_output=True,
                   text=True)
     # result = subprocess.run([energibridge_executable, '--summary', 'echo', 'hei'], capture_output=True,
