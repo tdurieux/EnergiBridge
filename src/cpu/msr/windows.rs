@@ -2,9 +2,7 @@
 
 use once_cell::sync::OnceCell;
 use std::{ffi::CString, sync::Once};
-use std::{
-    fs::{File, OpenOptions},
-};
+
 use thiserror::Error;
 use windows::{
     core::PCSTR,
@@ -85,7 +83,7 @@ fn open_driver() -> Result<HANDLE, RaplError> {
     }?)
 }
 
-pub unsafe fn read_msr_on_core(msr: u32, core: u32) -> Result<u64, std::io::Error> {
+pub unsafe fn read_msr_on_core(msr: u32, _core: u32) -> Result<u64, std::io::Error> {
     // Get the driver handle
     let rapl_driver = *RAPL_DRIVER.get().expect("RAPL driver not initialized");
 
