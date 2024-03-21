@@ -1,5 +1,7 @@
+import csv
 import subprocess
 import os
+import sys
 import numpy as np
 from extract_code import *
 import matplotlib.pyplot as plt
@@ -41,7 +43,7 @@ def make_time_series_plot(time_power, cumulative=False):
     plt.show()
 
 
-def run(program=None, cumulative=False):
+def run_windows(program=None, cumulative=False):
     if program is None:
         extract_and_write_code(notebook_path, start_marker, end_marker)
     else:
@@ -62,10 +64,50 @@ def run(program=None, cumulative=False):
     # get power from the data
     return data
 
+def run_mac(program=None, cumulative=False):
+    if program is None:
+        extract_and_write_code(notebook_path, start_marker, end_marker)
+    else:
+        with open('temp.py', 'w') as f:
+            f.write(program)
+    
+    subprocess.run(['chmod', '+x', '/Users/piaasbjornsen/Documents/V2024/SSE/EnergiBridgeWrapper/jupyter_energi/temp.py'])
+    # Run the temporary file with energibridge as a subprocess
+    energibridge_executable = "../target/release/energibridge"
+    command = [energibridge_executable, '-o', '../temp.csv', '--summary', 'python3','/Users/piaasbjornsen/Documents/V2024/SSE/EnergiBridgeWrapper/jupyter_energi/temp.py']
+    result = subprocess.run((command), capture_output=True,
+                  text=True)
+    # result = subprocess.run([energibridge_executable, '--summary', 'echo', 'hei'], capture_output=True,
+    #             text=True)
+    # Check if the command executed successfully
+    if result.returncode == 0:
+        print("Command executed successfully.")
+        # Load the data from temp.csv into the data variable
+        try:
+            data = np.genfromtxt('../temp.csv', delimiter=',')
+            print("Data loaded successfully.")
+            return data
+        except Exception as e:
+            print("Error loading data:", e)
+            return None
+    else:
+        print("Error executing command.")
+    
+    os.remove('temp.py')
+    return data
 
 def test_run():
-    data = np.genfromtxt('temp.csv', delimiter=',', skip_header=1)
+    data = np.genfromtxt('../temp.csv', delimiter=',', skip_header=1)
     res = extract_time_and_power(data, cumulative=True)
     make_time_series_plot(res, cumulative=True)
     print(res)
+
+def run(os):
+    if os == 'mac':
+        data = run_mac()
+    if os == 'windows':
+        data = run_windows()
+    return data 
+
+
 
