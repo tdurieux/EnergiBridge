@@ -12,31 +12,59 @@ import matplotlib.pyplot as plt
 
 def extract_time_and_power(dataset, cumulative=False):
     res = []
-    for data in dataset:
-        # get rid of header
-        data = data[1:]
-        # change the data to numpy array
-        data = np.array(data)
-        # keep only the power data and delta time
-        time = data[:, 0]
-        power = data[:, 27]
-        # accumulate the time
-        if cumulative:
-            time = np.cumsum(time) / 1_000
+    num_rows, num_columns = dataset[0].shape
 
-        # make diff of power
-        power = np.diff(power)
-        # insert 0 at the beginning
-        power = np.insert(power, 0, 0)
-        if cumulative:
-            power = np.cumsum(power)
-            power = power[0:-1]
-            time = time[0:-1]
-        else:
-            power = power[1:-1]
-            time = time[1:-1]
-        #make numpy array from time and power
-        res.append(np.column_stack((time, power)))
+    if platform.system().lower() == 'darwin':
+        for data in dataset:
+        # get rid of header
+            data = data[1:]
+            # change the data to numpy array
+            data = np.array(data)
+            # keep only the power data and delta time
+            time = data[:, 0]
+            power = data[:, 18]
+            if cumulative:
+                time = np.cumsum(time) / 1_000
+
+            # make diff of power
+            power = np.diff(power)
+            # insert 0 at the beginning
+            power = np.insert(power, 0, 0)
+            if cumulative:
+                power = np.cumsum(power)
+                power = power[0:-1]
+                time = time[0:-1]
+            else:
+                power = power[1:-1]
+                time = time[1:-1]
+            #make numpy array from time and power
+            res.append(np.column_stack((time, power)))
+    else:
+        for data in dataset:
+            # get rid of header
+            data = data[1:]
+            # change the data to numpy array
+            data = np.array(data)
+            # keep only the power data and delta time
+            time = data[:, 0]
+            power = data[:, 27]
+            # accumulate the time
+            if cumulative:
+                time = np.cumsum(time) / 1_000
+
+            # make diff of power
+            power = np.diff(power)
+            # insert 0 at the beginning
+            power = np.insert(power, 0, 0)
+            if cumulative:
+                power = np.cumsum(power)
+                power = power[0:-1]
+                time = time[0:-1]
+            else:
+                power = power[1:-1]
+                time = time[1:-1]
+            #make numpy array from time and power
+            res.append(np.column_stack((time, power)))
     return res
 
 
@@ -73,6 +101,7 @@ def make_violin_plot(time_power_dataset, cumulative=False):
 
 def run(program=None, cumulative=False, no_runs=1):
     current_os = platform.system().lower()
+    data = []
     
     if current_os == 'darwin':  # Mac OS
         if program is None:
@@ -83,31 +112,31 @@ def run(program=None, cumulative=False, no_runs=1):
 
         current_directory = os.getcwd()
         path = os.path.join(current_directory, 'temp.py')
-
-        # path ='/Users/piaasbjornsen/Documents/V2024/SSE/EnergiBridgeWrapper/jupyter_energi/temp.py'
-        subprocess.run(['chmod', '+x', path ])
-        # Run the temporary file with energibridge as a subprocess
-        energibridge_executable = "../target/release/energibridge"
-        command = [energibridge_executable, '-o', '../temp.csv', '--summary', 'python3', path]
-        result = subprocess.run((command), capture_output=True,
-                    text=True)
-        # result = subprocess.run([energibridge_executable, '--summary', 'echo', 'hei'], capture_output=True,
-        #             text=True)
-        # Check if the command executed successfully
-        if result.returncode == 0:
-            print("Command executed successfully.")
-            # Load the data from temp.csv into the data variable
-            try:
-                data = np.genfromtxt('../temp.csv', delimiter=',')
-                print("Data loaded successfully.")
-                return data
-            except Exception as e:
-                print("Error loading data:", e)
-                return None
-        else:
-            print("Error executing command.")
+        for i in range(no_runs):
+            subprocess.run(['chmod', '+x', path ])
+            # Run the temporary file with energibridge as a subprocess
+            energibridge_executable = "../target/release/energibridge"
+            command = [energibridge_executable, '-o', '../temp.csv', '--summary', 'python3', path]
+            result = subprocess.run((command), capture_output=True,
+                        text=True)
+            # Check if the command executed successfully
+            if result.returncode == 0:
+                print("Command executed successfully.")
+                # Load the data from temp.csv into the data variable
+                try:
+                    # data = np.genfromtxt('../temp.csv', delimiter=',')
+                    # data = np.array(data)
+                    data.append(pd.read_csv('../temp.csv'))
+                    print("Data loaded successfully.")
+                    return data
+                except Exception as e:
+                    print("Error loading data:", e)
+                    return None
+            else:
+                print("Error executing command.")
         
-        os.remove('temp.py')
+        if program is None:
+            os.remove('temp.py')
 
     elif current_os == 'windows':
         if program is None:
@@ -116,7 +145,6 @@ def run(program=None, cumulative=False, no_runs=1):
             with open('temp.py', 'w') as f:
                 f.write(program)
         # make empty list to store data
-        data = []
         for i in range(no_runs):
             # run the temporary file with energibridge.exe as admin
             res = subprocess.run(['energibridge.exe', '-o', 'temp.csv', '--summary', 'py', 'temp.py'], capture_output=True,
