@@ -70,7 +70,7 @@ def make_violin_plot(time_power_dataset, cumulative=False):
     plt.show()
 
 
-def run(program=None, cumulative=False, no_runs=1):
+def run_windows(program=None, cumulative=False, no_runs=1):
     if program is None:
         extract_and_write_code(notebook_path, start_marker, end_marker)
     else:
