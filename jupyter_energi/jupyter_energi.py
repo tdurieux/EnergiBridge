@@ -1,4 +1,5 @@
 import csv
+import platform
 import subprocess
 import os
 import sys
@@ -70,78 +71,77 @@ def make_violin_plot(time_power_dataset, cumulative=False):
     plt.show()
 
 
-def run_windows(program=None, cumulative=False, no_runs=1):
-    if program is None:
-        extract_and_write_code(notebook_path, start_marker, end_marker)
-    else:
-        with open('temp.py', 'w') as f:
-            f.write(program)
-    # make empty list to store data
-    data = []
-    for i in range(no_runs):
-        # run the temporary file with energibridge.exe as admin
-        res = subprocess.run(['energibridge.exe', '-o', 'temp.csv', '--summary', 'py', 'temp.py'], capture_output=True,
-                      text=True)
-        print(res.stdout)
-        print(res.stderr)
-        # get data from temp.csv with pandas and append it to the dataframe
-        data.append(pd.read_csv('temp.csv'))
-        # remove the temporary file
-        #os.remove('temp.csv')
-        # get power from the data
-
-    if program is None:
-        os.remove('temp.py')
-    return data
-
-def run_mac(program=None, cumulative=False):
-    if program is None:
-        extract_and_write_code(notebook_path, start_marker, end_marker)
-    else:
-        with open('temp.py', 'w') as f:
-            f.write(program)
-
-    current_directory = os.getcwd()
-    path = os.path.join(current_directory, 'temp.py')
-
-    # path ='/Users/piaasbjornsen/Documents/V2024/SSE/EnergiBridgeWrapper/jupyter_energi/temp.py'
-    subprocess.run(['chmod', '+x', path ])
-    # Run the temporary file with energibridge as a subprocess
-    energibridge_executable = "../target/release/energibridge"
-    command = [energibridge_executable, '-o', '../temp.csv', '--summary', 'python3', path]
-    result = subprocess.run((command), capture_output=True,
-                  text=True)
-    # result = subprocess.run([energibridge_executable, '--summary', 'echo', 'hei'], capture_output=True,
-    #             text=True)
-    # Check if the command executed successfully
-    if result.returncode == 0:
-        print("Command executed successfully.")
-        # Load the data from temp.csv into the data variable
-        try:
-            data = np.genfromtxt('../temp.csv', delimiter=',')
-            print("Data loaded successfully.")
-            return data
-        except Exception as e:
-            print("Error loading data:", e)
-            return None
-    else:
-        print("Error executing command.")
+def run(program=None, cumulative=False, no_runs=1):
+    current_os = platform.system().lower()
     
-    os.remove('temp.py')
+    if current_os == 'darwin':  # Mac OS
+        if program is None:
+            extract_and_write_code(notebook_path, start_marker, end_marker)
+        else:
+            with open('temp.py', 'w') as f:
+                f.write(program)
+
+        current_directory = os.getcwd()
+        path = os.path.join(current_directory, 'temp.py')
+
+        # path ='/Users/piaasbjornsen/Documents/V2024/SSE/EnergiBridgeWrapper/jupyter_energi/temp.py'
+        subprocess.run(['chmod', '+x', path ])
+        # Run the temporary file with energibridge as a subprocess
+        energibridge_executable = "../target/release/energibridge"
+        command = [energibridge_executable, '-o', '../temp.csv', '--summary', 'python3', path]
+        result = subprocess.run((command), capture_output=True,
+                    text=True)
+        # result = subprocess.run([energibridge_executable, '--summary', 'echo', 'hei'], capture_output=True,
+        #             text=True)
+        # Check if the command executed successfully
+        if result.returncode == 0:
+            print("Command executed successfully.")
+            # Load the data from temp.csv into the data variable
+            try:
+                data = np.genfromtxt('../temp.csv', delimiter=',')
+                print("Data loaded successfully.")
+                return data
+            except Exception as e:
+                print("Error loading data:", e)
+                return None
+        else:
+            print("Error executing command.")
+        
+        os.remove('temp.py')
+
+    elif current_os == 'windows':
+        if program is None:
+            extract_and_write_code(notebook_path, start_marker, end_marker)
+        else:
+            with open('temp.py', 'w') as f:
+                f.write(program)
+        # make empty list to store data
+        data = []
+        for i in range(no_runs):
+            # run the temporary file with energibridge.exe as admin
+            res = subprocess.run(['energibridge.exe', '-o', 'temp.csv', '--summary', 'py', 'temp.py'], capture_output=True,
+                        text=True)
+            print(res.stdout)
+            print(res.stderr)
+            # get data from temp.csv with pandas and append it to the dataframe
+            data.append(pd.read_csv('temp.csv'))
+            # remove the temporary file
+            #os.remove('temp.csv')
+            # get power from the data
+
+        if program is None:
+            os.remove('temp.py')
+
+    else:
+        raise NotImplementedError(f"Unsupported operating system: {current_os}")
     return data
+
 
 def test_run():
     data = np.genfromtxt('../temp.csv', delimiter=',', skip_header=1)
     res = extract_time_and_power(data, cumulative=True)
     make_time_series_plot(res, cumulative=True)
     print(res)
-
-def run(os):
-    if os == 'mac':
-        data = run_mac()
-    if os == 'windows':
-        data = run_windows()
-    return data 
 
 
 
