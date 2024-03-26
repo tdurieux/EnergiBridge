@@ -25,11 +25,6 @@ def extract_time_and_power(dataset, cumulative=False):
             power = data[:, 18]
             if cumulative:
                 time = np.cumsum(time) / 1_000
-
-            # make diff of power
-            power = np.diff(power)
-            # insert 0 at the beginning
-            power = np.insert(power, 0, 0)
             if cumulative:
                 power = np.cumsum(power)
                 power = power[0:-1]
@@ -128,10 +123,8 @@ def run(program=None, cumulative=False, no_runs=1):
                     # data = np.array(data)
                     data.append(pd.read_csv('../temp.csv'))
                     print("Data loaded successfully.")
-                    return data
                 except Exception as e:
                     print("Error loading data:", e)
-                    return None
             else:
                 print("Error executing command.")
         
