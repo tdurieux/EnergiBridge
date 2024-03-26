@@ -114,6 +114,8 @@ def run(program=None, cumulative=False, no_runs=1):
             command = [energibridge_executable, '-o', '../temp.csv', '--summary', 'python3', path]
             result = subprocess.run((command), capture_output=True,
                         text=True)
+            print(result.stdout)
+            print(result.stderr)
             # Check if the command executed successfully
             if result.returncode == 0:
                 print("Command executed successfully.")
