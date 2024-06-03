@@ -13,6 +13,8 @@ use std::process::{exit, Child};
 use std::process::{Command, Stdio};
 use std::thread::sleep;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use sysinfo::{CpuExt, ProcessExt, RefreshKind, System, SystemExt};
 
 use cpu::{get_cpu_cunter, get_cpu_usage};
@@ -60,6 +62,9 @@ fn main() {
     let interval = Duration::from_millis(args.interval.into());
     let sep = args.separator.as_str();
     let collect_gpu = args.gpu;
+    // Create an atomic flag to indicate when to stop the execution loop
+    let running = Arc::new(AtomicBool::new(true));
+    let r = running.clone();
 
     if args.command.is_empty() {
         eprintln!("Usage: {} <command>", "EnergiBridge");
@@ -72,6 +77,12 @@ fn main() {
             System::MINIMUM_CPU_UPDATE_INTERVAL.as_millis()
         );
     }
+    
+    // Set up the Ctrl+C handler
+    ctrlc::set_handler(move || {
+        println!("\nReceived Ctrl+C, stopping...");
+        r.store(false, Ordering::SeqCst);
+    }).expect("Error setting Ctrl-C handler");
 
     #[cfg(not(target_os = "macos"))]
     cpu::msr::start_rapl();
@@ -130,6 +141,11 @@ fn main() {
                 previous_results = results.clone();
                 collect(&mut sys, collect_gpu, child.id(), &mut results);
 
+                if running.load(Ordering::SeqCst) {
+                    // EnergiBridge received ctrlc
+                    child.kill().expect("Failed to kill child");
+                    break 1;
+                }
                 match child.try_wait() {
                     Ok(Some(status)) => {
                         // print_results(previous_time, &mut results, sep, &mut output);
