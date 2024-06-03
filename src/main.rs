@@ -145,7 +145,7 @@ fn main() {
                 previous_results = results.clone();
                 collect(&mut sys, collect_gpu, child.id(), &mut results);
 
-                if running.load(Ordering::SeqCst) {
+                if !running.load(Ordering::SeqCst) {
                     // EnergiBridge received ctrlc
                     child.kill().expect("Failed to kill child");
                     break 1;
