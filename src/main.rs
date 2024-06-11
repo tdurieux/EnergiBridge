@@ -4,6 +4,7 @@ mod memory;
 mod process;
 
 use clap::Parser;
+use clap::CommandFactory;
 
 use itertools::Itertools;
 use std::collections::HashMap;
@@ -24,18 +25,19 @@ use memory::get_memory_usage;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    // Where to save the output of power measurements
+    /// Output file to save the output of power measurements. Outputs to stdout if left blank. Overwrites the file if it already exists.
     #[arg(short, long)]
     output: Option<String>,
 
-    #[arg(short, long, default_value = ",")]
-    separator: String,
-
-    // Where to save the output of the command
+    /// Output file to save the output of the command. Outputs to stdout if left blank. Overwrites the file if it already exists.
     #[arg(short, long, required = false)]
     command_output: Option<String>,
 
-    /// Duration of the interval between two measurements in micoseconds
+    /// Define the separator between data fields.
+    #[arg(short, long, default_value = ",")]
+    separator: String,
+
+    /// Duration of the interval between two measurements in microseconds
     #[arg(short, long, default_value_t = 200)]
     interval: u32,
 
@@ -43,15 +45,15 @@ struct Args {
     #[arg(short, long, default_value_t = 0)]
     max_execution: u32,
 
-    // enable to measure the GPU power consumption
+    /// Measure the power consumption of the GPU
     #[arg(short, long, default_value_t = false)]
     gpu: bool,
 
-    // print the summary of the energy consumption
+    /// Print the summary of the energy consumption
     #[arg(long, default_value_t = false)]
     summary: bool,
 
-    // the command to execute
+    /// The command to execute
     #[clap(trailing_var_arg = true)]
     command: Vec<String>,
 }
@@ -67,7 +69,7 @@ fn main() {
     let r = running.clone();
 
     if args.command.is_empty() {
-        eprintln!("Usage: {} <command>", "EnergiBridge");
+        Args::command().print_help().expect("Error printing help");
         exit(1);
     }
 
@@ -232,7 +234,7 @@ fn print_results(
 
 fn print_header(results: &HashMap<String, f64>, sep: &str, output: &mut dyn Write) {
     output
-        .write_all(format!("Delta{}Time", sep).as_bytes())
+        .write_all(format!("Time_Delta{}Time", sep).as_bytes())
         .expect("Failed to write header");
     for key in results.keys().sorted() {
         output
