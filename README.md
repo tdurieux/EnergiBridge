@@ -72,6 +72,13 @@ Since any non-root program accessing the msr also needs the rawio capability, if
 sudo setcap cap_sys_rawio=ep target/release/energibridge;
 ```
 
+### MacOS
+
+Build EnergiBridge
+```
+cargo build -r;
+```
+
 ## Usage
 
 To run the script, use the following command:
