@@ -2,26 +2,23 @@ mod cpu;
 mod gpu;
 mod memory;
 mod process;
+mod util;
 
 use clap::Parser;
 
-use itertools::Itertools;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{stdout, Write};
-use std::process::{exit, Child};
-use std::process::{Command, Stdio};
-use std::thread::sleep;
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::process::exit;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use sysinfo::{CpuExt, ProcessExt, RefreshKind, System, SystemExt};
+use std::thread::sleep;
+use std::time::{Duration, Instant, SystemTime};
+use sysinfo::{System, SystemExt};
 
-use cpu::{get_cpu_counter, get_cpu_usage};
-use gpu::get_gpu_counter;
-use memory::get_memory_usage;
+use util::{collect, execute_command, print_header, print_results};
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 #[command(author, version, about, long_about = None)]
 struct Args {
     // Where to save the output of power measurements
@@ -35,7 +32,7 @@ struct Args {
     #[arg(short, long, required = false)]
     command_output: Option<String>,
 
-    /// Duration of the interval between two measurements in micoseconds
+    /// Duration of the interval between two measurements in microseconds
     #[arg(short, long, default_value_t = 200)]
     interval: u32,
 
@@ -46,6 +43,10 @@ struct Args {
     // enable to measure the GPU power consumption
     #[arg(short, long, default_value_t = false)]
     gpu: bool,
+
+    // Set energibridge to run as a service and listen for rpc calls
+    #[arg(short, long, default_value_t = false)]
+    use_as_service: bool,
 
     // print the summary of the energy consumption
     #[arg(long, default_value_t = false)]
@@ -62,9 +63,6 @@ fn main() {
     let interval = Duration::from_millis(args.interval.into());
     let sep = args.separator.as_str();
     let collect_gpu = args.gpu;
-    // Create an atomic flag to indicate when to stop the execution loop
-    let running = Arc::new(AtomicBool::new(true));
-    let r = running.clone();
 
     if args.command.is_empty() {
         eprintln!("Usage: {} <command>", "EnergiBridge");
@@ -77,20 +75,30 @@ fn main() {
             System::MINIMUM_CPU_UPDATE_INTERVAL.as_millis()
         );
     }
-    
+
+    measure_command(args.clone(), interval, sep, collect_gpu);
+}
+
+fn measure_command(args: Args, interval: Duration, sep: &str, collect_gpu: bool) {
+    // Create an atomic flag to indicate when to stop the execution loop
+    let running = Arc::new(AtomicBool::new(true));
+    let r = running.clone();
+
     // Set up the Ctrl+C handler
     ctrlc::set_handler(move || {
         println!("\nReceived Ctrl+C, stopping...");
         r.store(false, Ordering::SeqCst);
-    }).expect("Error setting Ctrl-C handler");
+    })
+    .expect("Error setting Ctrl-C handler");
 
     #[cfg(not(target_os = "macos"))]
     cpu::msr::start_rapl();
 
     let mut sys = System::new_all();
     sys.refresh_all();
-    std::thread::sleep(System::MINIMUM_CPU_UPDATE_INTERVAL);
+    sleep(System::MINIMUM_CPU_UPDATE_INTERVAL);
     let mut results: HashMap<String, f64> = HashMap::new();
+
     collect(&mut sys, collect_gpu, 0, &mut results);
 
     let mut output = match args.output {
@@ -109,7 +117,7 @@ fn main() {
             collect(&mut sys, collect_gpu, child.id(), &mut results);
             print_header(&results, sep, &mut output);
             let mut previous_time = SystemTime::now();
-            let mut energy_array: f64 = 0 as f64;
+            let mut energy_array: f64 = 0f64;
             let mut previous_results = results.clone();
             let exit_code = loop {
                 if args.max_execution > 0
@@ -122,25 +130,12 @@ fn main() {
                 let time_before = SystemTime::now();
                 print_results(previous_time, &mut results, sep, &mut output);
 
-                if args.summary {
-                    if results.contains_key("CPU_POWER (Watts)") {
-                        let energy = results["CPU_POWER (Watts)"];
-                        energy_array += energy
-                            * (previous_time.elapsed().unwrap().as_millis() as f64 / 1000 as f64);
-                    } else if results.contains_key("SYSTEM_POWER (Watts)") {
-                        let energy = results["SYSTEM_POWER (Watts)"];
-                        energy_array += energy
-                            * (previous_time.elapsed().unwrap().as_millis() as f64 / 1000 as f64);
-                    } else if results.contains_key("CPU_ENERGY (J)") {
-                        let energy = results["CPU_ENERGY (J)"];
-                        let old_energy = previous_results["CPU_ENERGY (J)"];
-                        energy_array += energy - old_energy;
-                    } else if results.contains_key("PACKAGE_ENERGY (J)") {
-                        let energy = results["PACKAGE_ENERGY (J)"];
-                        let old_energy = previous_results["PACKAGE_ENERGY (J)"];
-                        energy_array += energy - old_energy;
-                    }
-                }
+                energy_array += util::process_summary(
+                    args.summary,
+                    &mut results,
+                    &mut previous_time,
+                    &mut previous_results,
+                );
                 previous_time = SystemTime::now();
                 previous_results = results.clone();
                 collect(&mut sys, collect_gpu, child.id(), &mut results);
@@ -178,66 +173,4 @@ fn main() {
             exit(1);
         }
     }
-}
-
-fn execute_command(command: Vec<String>, output: Option<String>) -> std::io::Result<Child> {
-    if command.is_empty() {
-        exit(1);
-    }
-    let mut cmd = Command::new(&command[0]);
-    for arg in command.iter().skip(1) {
-        cmd.arg(arg);
-    }
-    if output.is_some() {
-        cmd.stdout(Stdio::from(File::create(output.unwrap()).unwrap()));
-    }
-
-    return cmd.spawn();
-}
-
-fn collect(sys: &mut System, collect_gpu: bool, pid: u32, results: &mut HashMap<String, f64>) {
-    get_memory_usage(sys, results);
-    get_cpu_usage(sys, results);
-    get_cpu_counter(sys, results);
-    if collect_gpu {
-        get_gpu_counter(results);
-    }
-    // get_process_usage(sys, pid, results);
-}
-
-fn print_results(
-    time: SystemTime,
-    results: &mut HashMap<String, f64>,
-    sep: &str,
-    output: &mut dyn Write,
-) {
-    output
-        .write_all(
-            format!(
-                "{}{}{}",
-                time.elapsed().unwrap().as_millis(),
-                sep,
-                time.duration_since(UNIX_EPOCH).unwrap().as_millis()
-            )
-            .as_bytes(),
-        )
-        .expect("Failed to write results");
-    for key in results.keys().sorted() {
-        output
-            .write_all(format!("{}{}", sep, results[key]).as_bytes())
-            .expect("Failed to write results");
-    }
-    output.write_all(b"\n").expect("Failed to write results");
-}
-
-fn print_header(results: &HashMap<String, f64>, sep: &str, output: &mut dyn Write) {
-    output
-        .write_all(format!("Delta{}Time", sep).as_bytes())
-        .expect("Failed to write header");
-    for key in results.keys().sorted() {
-        output
-            .write_all(format!("{}{}", sep, key).as_bytes())
-            .expect("Failed to write header");
-    }
-    output.write_all(b"\n").expect("Failed to write header");
 }
