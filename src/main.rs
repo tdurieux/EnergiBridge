@@ -84,11 +84,13 @@ fn main() {
         r.store(false, Ordering::SeqCst);
     }).expect("Error setting Ctrl-C handler");
 
-    #[cfg(not(target_os = "macos"))]
-    cpu::msr::start_rapl();
-
     let mut sys = System::new_all();
     sys.refresh_all();
+
+    #[cfg(not(target_os = "macos"))]
+    cpu::msr::start_rapl(&mut sys);
+
+
     std::thread::sleep(System::MINIMUM_CPU_UPDATE_INTERVAL);
     let mut results: HashMap<String, f64> = HashMap::new();
     collect(&mut sys, collect_gpu, 0, &mut results);
@@ -170,6 +172,9 @@ fn main() {
                     start_time.elapsed().as_secs_f32()
                 );
             }
+
+            #[cfg(not(target_os = "macos"))]
+            cpu::msr::close_rapl();
 
             exit(exit_code);
         }

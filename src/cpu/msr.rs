@@ -8,9 +8,14 @@ pub mod windows;
 
 // https://github.com/cs-23-pt-9-01/rapl-interface
 
-pub fn start_rapl() {    
+pub fn start_rapl(sys: &mut sysinfo::System) {    
     #[cfg(target_os = "windows")]
-    windows::start_rapl_impl();
+    windows::start_rapl_impl(sys);
+}
+
+pub fn close_rapl() {    
+    #[cfg(target_os = "windows")]
+    windows::close_rapl();
 }
 
 pub unsafe fn read_msr_on_core(msr: u32, core: u32) -> Result<u64, std::io::Error> {
