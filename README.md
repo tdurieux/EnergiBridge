@@ -97,7 +97,7 @@ Options:
   -c, --command-output <COMMAND_OUTPUT>
 
   -i, --interval <INTERVAL>
-          Duration of the interval between two measurements in micoseconds [default: 100]
+          Duration of the interval between two measurements in milliseconds [default: 200]
   -m, --max-execution <MAX_EXECUTION>
           Define the maximum duration of the execution of the command in seconds, set to -1 to disable [default: 0]
   -g, --gpu
