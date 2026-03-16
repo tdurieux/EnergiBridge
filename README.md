@@ -49,6 +49,14 @@ cargo build -r
 
 > For PowerShell use `sc.exe` instead of `sc`.
 
+The `sc` command manages Windows services via the Service Control Manager (SCM), for more information click [here](https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-r2-and-2012/cc754599(v=ws.11)).
+
+#### Installing from Precompiled Binary
+
+Instead of building from source with `cargo`, you can download the precompiled `.exe` file from the _Releases_ tab on GitHub.
+
+Then follow the previous steps to create and start the `rapl` service with the `sc` command.
+
 ### Linux
 
 Change the permission of the msr file to be able to read them without root access.
