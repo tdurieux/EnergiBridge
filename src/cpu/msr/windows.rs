@@ -77,12 +77,45 @@ pub fn read_msr_on_core(msr: u32, core: u32) -> Result<u64, std::io::Error> {
     // Get the driver handle
     let pawn_io_driver = RAPL_DRIVER.get().expect("RAPL driver not initialized");
 
+    // Pin the current thread to the target core before reading the MSR.
+    // PawnIO's ioctl_read_msr executes RDMSR on whichever core the calling
+    // thread is scheduled on, so we must set affinity first — this matches
+    // how LibreHardwareMonitor reads per-core MSRs via PawnIO.
+    let prev_affinity = set_thread_affinity_to_core(core)?;
+
     let input = [msr as u64];
     let mut output = [0u64; 1];
 
-    match pawn_io_driver.execute("ioctl_read_msr", Some(&input), Some(&mut output)) {
+    let result = match pawn_io_driver.execute("ioctl_read_msr", Some(&input), Some(&mut output)) {
         Ok(_) => Ok(output[0]),
         Err(e) => Err(std::io::Error::new(std::io::ErrorKind::Other, format!("PawnIO error with HRESULT: {}", e))),
+    };
+
+    // Restore the original thread affinity
+    restore_thread_affinity(prev_affinity);
+
+    result
+}
+
+/// Set the current thread's affinity to a single logical core.
+/// Returns the previous affinity mask so it can be restored.
+fn set_thread_affinity_to_core(core: u32) -> Result<usize, std::io::Error> {
+    use windows::Win32::System::Threading::{GetCurrentThread, SetThreadAffinityMask};
+
+    let mask: usize = 1 << core;
+    let prev = unsafe { SetThreadAffinityMask(GetCurrentThread(), mask) };
+    if prev == 0 {
+        return Err(std::io::Error::last_os_error());
+    }
+    Ok(prev)
+}
+
+/// Restore the thread affinity to a previously saved mask.
+fn restore_thread_affinity(mask: usize) {
+    use windows::Win32::System::Threading::{GetCurrentThread, SetThreadAffinityMask};
+
+    unsafe {
+        SetThreadAffinityMask(GetCurrentThread(), mask);
     }
 }
 
