@@ -79,8 +79,7 @@ pub fn read_msr_on_core(msr: u32, core: u32) -> Result<u64, std::io::Error> {
 
     // Pin the current thread to the target core before reading the MSR.
     // PawnIO's ioctl_read_msr executes RDMSR on whichever core the calling
-    // thread is scheduled on, so we must set affinity first — this matches
-    // how LibreHardwareMonitor reads per-core MSRs via PawnIO.
+    // thread is scheduled on, so we must set affinity first
     let prev_affinity = set_thread_affinity_to_core(core)?;
 
     let input = [msr as u64];
