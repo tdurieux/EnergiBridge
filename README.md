@@ -26,28 +26,9 @@ Depending on your hardware you need different dependencies.
 
 ### Windows
 
-Install LibreHardwareMonitor to access the CPU registry.
+Windows requires kernel-level access to read the CPU MSR registers. EnergiBridge uses [PawnIO](https://pawnio.eu/) to access hardware level registers. Simply install the PawnIO driver from the link above.
 
-
-In an elevated (Administrator) command line (e.g. cmd.exe):
-```
-Create:
-sc create rapl type=kernel binPath="<absolute_path_to_LibreHardwareMonitor.sys>"
-
-Start:
-sc start rapl
-
-Stop:
-sc stop rapl
-
-Delete:
-sc delete rapl
-
-Build:
-cargo build -r
-```
-
-> For PowerShell use `sc.exe` instead of `sc`.
+Using this driver requires administrator-level rights. You need to run EnergiBridge from an administrator CMD or Powershell.
 
 ### Linux
 
@@ -81,7 +62,7 @@ cargo build -r;
 
 ## Usage
 
-To run the script, use the following command:
+To run the script, use the following command (Windows: use an administrator CMD or Powershell):
 
 ```
 Usage: energibridge[.exe] [OPTIONS] [COMMAND]...
