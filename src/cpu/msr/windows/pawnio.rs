@@ -26,9 +26,26 @@ type PawnioExecute = unsafe extern "system" fn(
 ) -> i32;
 type PawnioClose = unsafe extern "system" fn(handle: *mut std::ffi::c_void) -> i32;
 
+const INTEL_MSR_BLOB: &[u8] = include_bytes!("../../../../resources/blobs/IntelMSR.bin");
+const AMD_FAMILY17_BLOB: &[u8] = include_bytes!("../../../../resources/blobs/AMDFamily17.bin");
+
 /// HRESULT success check
 fn succeeded(hr: i32) -> bool {
     hr >= 0
+}
+
+fn select_blob_for_vendor(vendor: &str) -> (&'static str, &'static [u8]) {
+    if vendor == "GenuineIntel" {
+        ("IntelMSR.bin", INTEL_MSR_BLOB)
+    } else if vendor == "AuthenticAMD" {
+        ("AMDFamily17.bin", AMD_FAMILY17_BLOB)
+    } else {
+        eprintln!(
+            "[PawnIO] Unknown CPU vendor '{}', using AMD blob as fallback",
+            vendor
+        );
+        ("AMDFamily17.bin", AMD_FAMILY17_BLOB)
+    }
 }
 
 /// Step 1: Find PawnIO install location from the Windows registry.
@@ -152,34 +169,13 @@ impl PawnIO {
                 pawnio_module_handle: None,
             };
 
-//            let blob_path = r"C:\Users\enriq\Documents\GitHub\pawn_test\blobs\AMDFamily17.bin";
-
             sys.refresh_cpu();
 
             let vendor = sys.global_cpu_info().vendor_id();
-            #[cfg(not(target_os = "macos"))]
+            let (blob_name, blob) = select_blob_for_vendor(vendor);
 
-            let blob_path = if vendor == "GenuineIntel" {
-                r"C:\Users\enriq\Documents\GitHub\pawn_test\blobs\IntelMSR.bin"
-            } else if vendor == "AuthenticAMD" {
-                r"C:\Users\enriq\Documents\GitHub\pawn_test\blobs\AMDFamily17.bin"
-            } else {
-                eprintln!("[PawnIO] Unknown CPU vendor '{}', using AMD blob as fallback", vendor);
-                r"C:\Users\enriq\Documents\GitHub\pawn_test\blobs\AMDFamily17.bin"
-            };
-
-            let blob = match std::fs::read(&blob_path) {
-                Ok(data) => {
-                    #[cfg(debug_assertions)]
-                    println!("[PawnIO] Loaded blob '{}' ({} bytes)", blob_path, data.len());
-                    
-                    data
-                }
-                Err(e) => {
-                    eprintln!("[PawnIO] Failed to read blob '{}': {}", blob_path, e);                    
-                    return Err(e.into());
-                }
-            };
+            #[cfg(debug_assertions)]
+            println!("[PawnIO] Selected embedded blob '{}' ({} bytes)", blob_name, blob.len());
 
             let mut handle: *mut std::ffi::c_void = ptr::null_mut();
 
