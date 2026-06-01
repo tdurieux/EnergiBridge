@@ -1,20 +1,14 @@
 #![cfg(target_os = "windows")]
 
 use once_cell::sync::OnceCell;
-use std::{ffi::CString, sync::Once};
-use std::{
-    fs::{File, OpenOptions},
-};
+use std::{sync::Once};
 use thiserror::Error;
 use windows::{
-    core::PCSTR,
     Win32::{
-        Foundation::{GENERIC_READ, HANDLE},
+        Foundation::{HANDLE},
         Security::{GetTokenInformation, TokenElevation, TOKEN_ELEVATION, TOKEN_QUERY},
-        Storage::FileSystem::{CreateFileA, FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ, OPEN_EXISTING},
         System::{
             Threading::{GetCurrentProcess, OpenProcessToken},
-            IO::DeviceIoControl,
         },
     },
 };
@@ -29,8 +23,6 @@ pub enum RaplError {
     #[error("windows error")]
     Windows(#[from] windows::core::Error),
 }
-
-const IOCTL_OLS_READ_MSR: u32 = 0x9C402084;
 
 //static RAPL_STOP: AtomicU64 = AtomicU64::new(0);
 

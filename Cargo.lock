@@ -225,7 +225,6 @@ dependencies = [
  "smc",
  "sysinfo",
  "thiserror",
- "winapi",
  "windows",
 ]
 

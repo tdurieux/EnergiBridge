@@ -19,10 +19,8 @@ pub fn close_rapl() {
 }
 
 pub unsafe fn read_msr_on_core(msr: u32, core: u32) -> Result<u64, std::io::Error> {
-    unsafe {
-        #[cfg(target_os = "windows")]
-        return windows::read_msr_on_core(msr, core);
-        #[cfg(target_os = "linux")]
-        return linux::read_msr_on_core(msr, core);
-    }
+    #[cfg(target_os = "windows")]
+    return windows::read_msr_on_core(msr, core);
+    #[cfg(target_os = "linux")]
+    return linux::read_msr_on_core(msr, core);
 }

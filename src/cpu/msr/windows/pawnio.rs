@@ -53,42 +53,53 @@ fn select_blob_for_vendor(vendor: &str) -> (&'static str, &'static [u8]) {
 /// `HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\PawnIO`.
 /// Falls back to `C:\Program Files\PawnIO` if the registry key is not found.
 fn find_pawnio_install_location() -> PathBuf {
-    use winapi::um::winreg::{RegOpenKeyExA, RegQueryValueExA, HKEY_LOCAL_MACHINE};
-    use winapi::um::winnt::{KEY_READ, REG_SZ};
+    use windows::core::PCWSTR;
+    use windows::Win32::System::Registry::{
+        RegCloseKey, RegOpenKeyExW, RegQueryValueExW, HKEY, HKEY_LOCAL_MACHINE, KEY_READ,
+        REG_SZ, REG_VALUE_TYPE,
+    };
 
     unsafe {
-        let subkey =
-            CString::new(r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\PawnIO").unwrap();
-        let value_name = CString::new("InstallLocation").unwrap();
-        let mut hkey: winapi::shared::minwindef::HKEY = ptr::null_mut();
+        let subkey: Vec<u16> = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\PawnIO"
+            .encode_utf16()
+            .chain(std::iter::once(0))
+            .collect();
+        let value_name: Vec<u16> = "InstallLocation"
+            .encode_utf16()
+            .chain(std::iter::once(0))
+            .collect();
+        let mut hkey = HKEY::default();
 
-        let status = RegOpenKeyExA(
+        let status = RegOpenKeyExW(
             HKEY_LOCAL_MACHINE,
-            subkey.as_ptr(),
+            PCWSTR(subkey.as_ptr()),
             0,
             KEY_READ,
             &mut hkey,
         );
 
-        if status == 0 {
-            let mut data_type: u32 = 0;
+        if status.is_ok() {
+            let mut data_type = REG_VALUE_TYPE(0);
             let mut buffer = [0u8; 512];
             let mut buffer_size: u32 = buffer.len() as u32;
 
-            let status = RegQueryValueExA(
+            let status = RegQueryValueExW(
                 hkey,
-                value_name.as_ptr(),
-                ptr::null_mut(),
-                &mut data_type,
-                buffer.as_mut_ptr(),
-                &mut buffer_size,
+                PCWSTR(value_name.as_ptr()),
+                None,
+                Some(&mut data_type),
+                Some(buffer.as_mut_ptr()),
+                Some(&mut buffer_size),
             );
 
             // Close the key regardless of query result
-            winapi::um::winreg::RegCloseKey(hkey);
+            let _ = RegCloseKey(hkey);
 
-            if status == 0 && data_type == REG_SZ {
-                let path_str = String::from_utf8_lossy(&buffer[..buffer_size as usize])
+            if status.is_ok() && data_type == REG_VALUE_TYPE(REG_SZ.0) {
+                let byte_len = (buffer_size as usize).min(buffer.len());
+                let utf16_len = byte_len / 2;
+                let utf16_slice = std::slice::from_raw_parts(buffer.as_ptr() as *const u16, utf16_len);
+                let path_str = String::from_utf16_lossy(utf16_slice)
                     .trim_end_matches('\0')
                     .to_string();
                 if !path_str.is_empty() {
