@@ -5,7 +5,6 @@ use std::{ffi::CString, sync::Once};
 use std::{
     fs::{File, OpenOptions},
 };
-
 use std::io::Read;
 use std::io::Seek;
 use std::io::SeekFrom;
