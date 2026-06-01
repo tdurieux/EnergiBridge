@@ -34,17 +34,16 @@ fn succeeded(hr: i32) -> bool {
     hr >= 0
 }
 
-fn select_blob_for_vendor(vendor: &str) -> (&'static str, &'static [u8]) {
+fn select_blob_for_vendor(vendor: &str) -> Result<(&'static str, &'static [u8]), String> {
     if vendor == "GenuineIntel" {
-        ("IntelMSR.bin", INTEL_MSR_BLOB)
+        Ok(("IntelMSR.bin", INTEL_MSR_BLOB))
     } else if vendor == "AuthenticAMD" {
-        ("AMDFamily17.bin", AMD_FAMILY17_BLOB)
+        Ok(("AMDFamily17.bin", AMD_FAMILY17_BLOB))
     } else {
-        eprintln!(
-            "[PawnIO] Unknown CPU vendor '{}', using AMD blob as fallback",
+        Err(format!(
+            "[PawnIO] Unknown CPU vendor or not supported '{}'. Please open an issue or PR in GitHub",
             vendor
-        );
-        ("AMDFamily17.bin", AMD_FAMILY17_BLOB)
+        ))
     }
 }
 
@@ -183,7 +182,11 @@ impl PawnIO {
             sys.refresh_cpu();
 
             let vendor = sys.global_cpu_info().vendor_id();
-            let (blob_name, blob) = select_blob_for_vendor(vendor);
+            let (blob_name, blob) = select_blob_for_vendor(vendor)
+                .map_err(|msg| {
+                    eprintln!("{}", msg);
+                    msg
+                })?;
 
             #[cfg(debug_assertions)]
             println!("[PawnIO] Selected embedded blob '{}' ({} bytes)", blob_name, blob.len());
