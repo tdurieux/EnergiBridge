@@ -171,20 +171,24 @@ pub fn read_msr_on_core(msr: u32, core: u32) -> Result<u64, std::io::Error> {
 }
 
 /// Set the current thread's affinity to a single logical core.
-/// Returns the previous affinity mask so it can be restored.
+///
+/// Limited to the thread's current processor group, will not work on systems with >64 logical cores.
 fn set_thread_affinity_to_core(core: u32) -> Result<usize, std::io::Error> {
     use windows::Win32::System::Threading::{GetCurrentThread, SetThreadAffinityMask};
 
     let logical_core = resolve_logical_core(core)?;
 
-    if logical_core >= usize::BITS {
-        return Err(std::io::Error::new(
+    let mask = (1usize).checked_shl(logical_core).ok_or_else(|| {
+        std::io::Error::new(
             std::io::ErrorKind::InvalidInput,
-            format!("logical core index {} exceeds affinity mask width {}", logical_core, usize::BITS),
-        ));
-    }
+            format!(
+                "logical core index {} is not addressable via SetThreadAffinityMask (mask width {} bits; processor-group limited)",
+                logical_core,
+                usize::BITS
+            ),
+        )
+    })?;
 
-    let mask: usize = 1 << logical_core;
     let prev = unsafe { SetThreadAffinityMask(GetCurrentThread(), mask) };
     if prev == 0 {
         return Err(std::io::Error::last_os_error());
