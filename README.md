@@ -1,126 +1,127 @@
-# EnergiBridge
+<div align="center">
 
-[![Release](https://github.com/tdurieux/EnergiBridge/actions/workflows/release.yml/badge.svg)](https://github.com/tdurieux/EnergiBridge/actions/workflows/release.yml) [![GitHub Release](https://img.shields.io/github/v/release/tdurieux/EnergiBridge)](https://github.com/tdurieux/EnergiBridge/releases)
+# ⚡ EnergiBridge
 
+**One command-line tool to measure software energy consumption — across every major OS and CPU.**
 
+[![Release](https://github.com/tdurieux/EnergiBridge/actions/workflows/release.yml/badge.svg)](https://github.com/tdurieux/EnergiBridge/actions/workflows/release.yml)
+[![GitHub Release](https://img.shields.io/github/v/release/tdurieux/EnergiBridge)](https://github.com/tdurieux/EnergiBridge/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Paper](https://img.shields.io/badge/paper-arXiv%3A2312.13897-e5503a)](https://arxiv.org/abs/2312.13897)
 
-Energibridge is a cross-platform energy measurement utility that provides support for Linux, Windows, and MacOS, as well as Intel, AMD, and Apple ARM CPU architectures.
+[Install](#install) · [Usage](#usage) · [Output](#output) · [Citation](#citation)
 
-This tool is designed to collect resource usage data for a command to execute and to output the data in a CSV format.
+</div>
 
-| OS      | Intel CPU | AMD CPU | M1 CPU | Intel GPU | Nvidia GPU | AMD GPU | M1 GPU |
-| ------- | --------- | ------- | ------ | --------- | ---------- | ------- | ------ |
-| Linux   | ✅        |   ✅    |        |           |    ✅      |         |        |
-| Windows | ✅        |   ✅    |        |           |    ✅      |         |        |
-| Mac     | ✅        |         |   ✅   |    ✅     |            |    ✅   |   ✅   |
+## What it does
 
-## Requirements
+Measuring how much energy software uses is awkward: every operating system and CPU exposes different, low-level counters, so experiments are hard to set up and even harder to reproduce on another machine.
 
-Depending on your hardware you need different dependencies.
+EnergiBridge wraps **any command** and records power, frequency, temperature, CPU/GPU usage, and memory at fixed intervals to a **CSV** — behind a single interface, so your energy experiments run and reproduce the same way everywhere.
 
-### NVIDIA
+### Platform support
 
-- nvml
+| OS      | Intel CPU | AMD CPU | M-series | Intel GPU | Nvidia GPU | AMD GPU | M-series GPU |
+| ------- | :-------: | :-----: | :------: | :-------: | :--------: | :-----: | :----------: |
+| Linux   |    ✅     |   ✅    |          |           |     ✅     |         |              |
+| Windows |    ✅     |   ✅    |          |           |     ✅     |         |              |
+| macOS   |    ✅     |         |    ✅    |    ✅     |            |   ✅    |      ✅      |
 
 ## Install
 
-### Windows
+Prebuilt binaries are available on the [releases page](https://github.com/tdurieux/EnergiBridge/releases). To build from source you need a [Rust toolchain](https://rustup.rs/); NVIDIA GPU support additionally requires `nvml`.
 
-Install LibreHardwareMonitor to access the CPU registry.
+<details>
+<summary><b>Linux</b></summary>
 
+Grant read access to the MSR files (reset on every reboot):
 
-In an elevated (Administrator) command line (e.g. cmd.exe):
+```bash
+sudo chgrp -R msr /dev/cpu/*/msr
+sudo chmod g+r /dev/cpu/*/msr
 ```
-Create:
+
+Build, then grant the binary the `rawio` capability (re-run if you move the binary):
+
+```bash
+cargo build -r
+sudo setcap cap_sys_rawio=ep target/release/energibridge
+```
+
+</details>
+
+<details>
+<summary><b>Windows</b></summary>
+
+EnergiBridge uses LibreHardwareMonitor to read the CPU registry. In an **elevated** command prompt (use `sc.exe` in PowerShell):
+
+```bat
 sc create rapl type=kernel binPath="<absolute_path_to_LibreHardwareMonitor.sys>"
-
-Start:
 sc start rapl
-
-Stop:
-sc stop rapl
-
-Delete:
-sc delete rapl
-
-Build:
 cargo build -r
 ```
 
-> For PowerShell use `sc.exe` instead of `sc`.
+Manage the driver with `sc stop rapl` / `sc delete rapl`.
 
-### Linux
+</details>
 
-Change the permission of the msr file to be able to read them without root access.
-The permissions are reseted each time your restart the machine.
+<details>
+<summary><b>macOS</b></summary>
 
-```
-sudo chgrp -R msr /dev/cpu/*/msr;
-sudo chmod g+r /dev/cpu/*/msr;
-```
-
-Build EnergiBridge
-
-```
-cargo build -r;
+```bash
+cargo build -r
 ```
 
-Provide the permission to the binary to read the registry.
-Since any non-root program accessing the msr also needs the rawio capability, if you move the binary you should eecute this line again
-
-```
-sudo setcap cap_sys_rawio=ep target/release/energibridge;
-```
-
-### MacOS
-
-Build EnergiBridge
-```
-cargo build -r;
-```
+</details>
 
 ## Usage
 
-To run the script, use the following command:
-
 ```
-Usage: energibridge[.exe] [OPTIONS] [COMMAND]...
-
-Arguments:
-  [COMMAND]...
+energibridge [OPTIONS] [COMMAND]...
 
 Options:
-  -o, --output <OUTPUT>
-
-  -s, --separator <SEPARATOR>
-          [default: ,]
-  -c, --command-output <COMMAND_OUTPUT>
-
-  -i, --interval <INTERVAL>
-          Duration of the interval between two measurements in milliseconds [default: 200]
-  -m, --max-execution <MAX_EXECUTION>
-          Define the maximum duration of the execution of the command in seconds, set to -1 to disable [default: 0]
-  -g, --gpu
-          Get GPU usage data
-      --summary
-          Provide a summary of the total energy consumption of running the command
-  -h, --help
-          Print help
-  -V, --version
-          Print version
+  -o, --output <OUTPUT>            Write measurements to this CSV file
+  -s, --separator <SEPARATOR>     CSV separator [default: ,]
+  -c, --command-output <FILE>     Capture the command's own output
+  -i, --interval <INTERVAL>       Milliseconds between measurements [default: 200]
+  -m, --max-execution <SECONDS>   Cap the command duration (-1 to disable) [default: 0]
+  -g, --gpu                       Also collect GPU usage
+      --summary                   Print total energy consumption at the end
+  -h, --help                      Print help
+  -V, --version                   Print version
 ```
 
-## Output Example
+Example — measure a build and print a summary:
 
-```csv
-Delta,Time,CPU_FREQUENCY_0,CPU_FREQUENCY_1,CPU_FREQUENCY_2,CPU_FREQUENCY_3,CPU_FREQUENCY_4,CPU_FREQUENCY_5,CPU_FREQUENCY_6,CPU_FREQUENCY_7,CPU_FREQUENCY_8,CPU_FREQUENCY_9,CPU_TEMP_0,CPU_TEMP_1,CPU_TEMP_2,CPU_TEMP_3,CPU_TEMP_4,CPU_TEMP_5,CPU_TEMP_6,CPU_TEMP_7,CPU_TEMP_8,CPU_TEMP_9,CPU_USAGE_0,CPU_USAGE_1,CPU_USAGE_2,CPU_USAGE_3,CPU_USAGE_4,CPU_USAGE_5,CPU_USAGE_6,CPU_USAGE_7,CPU_USAGE_8,CPU_USAGE_9,SYSTEM_POWER (Watts),TOTAL_MEMORY,TOTAL_SWAP,USED_MEMORY,USED_SWAP
-0,1697704464320,0,0,0,0,0,0,0,0,0,0,46.529457092285156,44.31881332397461,43.83422088623047,47.03656005859375,44.67115783691406,43.856910705566406,41.333412170410156,41.268951416015625,44.348262786865234,43.08387756347656,46.37215805053711,45.429779052734375,15.021618843078613,8.819367408752441,5.0954484939575195,3.514699935913086,2.9715969562530518,1.5818228721618652,1.1069598197937012,0.9475208520889282,11.58033275604248,34359738368,0,10188488704,0
-104,1697704464321,0,0,0,0,0,0,0,0,0,0,46.529457092285156,44.31881332397461,43.83422088623047,47.03656005859375,44.67115783691406,43.856910705566406,41.333412170410156,41.268951416015625,44.348262786865234,43.08387756347656,46.37215042114258,45.429771423339844,15.021615982055664,8.819366455078125,5.095447063446045,3.514699697494507,2.9715967178344727,1.5818227529525757,1.1069598197937012,0.9475207924842834,11.58033275604248,34359738368,0,10189275136,0
+```bash
+energibridge --summary -o results.csv -- cargo build --release
 ```
 
+## Output
 
-## Units of output metrics
+EnergiBridge writes one CSV row per interval. Units:
 
 | Time | Energy | Memory | Frequency | Voltage |
-|:----:|:------:|:------:|:---------:|:-------:|
-|  ms  |    J   |  Bytes |    MHz    |    V    |
+| :--: | :----: | :----: | :-------: | :-----: |
+|  ms  |   J    | Bytes  |    MHz    |    V    |
+
+<details>
+<summary>Sample CSV</summary>
+
+```csv
+Delta,Time,CPU_FREQUENCY_0,...,CPU_TEMP_0,...,CPU_USAGE_0,...,SYSTEM_POWER (Watts),TOTAL_MEMORY,TOTAL_SWAP,USED_MEMORY,USED_SWAP
+0,1697704464320,0,...,46.52,...,46.37,...,11.58,34359738368,0,10188488704,0
+104,1697704464321,0,...,46.52,...,46.37,...,11.58,34359738368,0,10189275136,0
+```
+
+</details>
+
+## Citation
+
+If you use EnergiBridge in your research, please cite it (see [`CITATION.cff`](CITATION.cff)):
+
+> J. Sallou, L. Cruz, T. Durieux. *EnergiBridge: Empowering Software Sustainability through Cross-Platform Energy Measurement.* arXiv:2312.13897, 2023. <https://arxiv.org/abs/2312.13897>
+
+## License
+
+[MIT](LICENSE) © [June Sallou](https://orcid.org/0000-0003-2230-9351), [Luís Cruz](https://luiscruz.github.io/), and [Thomas Durieux](https://durieux.me)
