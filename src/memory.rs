@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use sysinfo::{System, SystemExt};
+use sysinfo::System;
 
 pub fn get_memory_usage(sys: &mut System, results: &mut HashMap<String, f64>) {
     sys.refresh_memory();

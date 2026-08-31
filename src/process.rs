@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use sysinfo::{System, SystemExt, ProcessExt, Pid};
+use sysinfo::{System, Pid};
 
 pub fn get_process_usage(sys: &mut System, pid: u32, results: &mut HashMap<String, f64>) {
     let p = sys.process(Pid::from(pid as usize));

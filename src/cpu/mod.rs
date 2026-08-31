@@ -8,14 +8,14 @@ mod intel;
 pub mod msr;
 
 use std::collections::HashMap;
-use sysinfo::{CpuExt, System, SystemExt};
+use sysinfo::System;
 
 pub fn get_number_cores(sys: &mut System) -> Option<usize> {
     return sys.physical_core_count();
 }
 
 pub fn get_cpu_usage(sys: &mut System, results: &mut HashMap<String, f64>) {
-    sys.refresh_cpu();
+    sys.refresh_cpu_all();
 
     for (i, cpu) in sys.cpus().iter().enumerate() {
         let key: String = format!("CPU_USAGE_{i}");
@@ -27,9 +27,10 @@ pub fn get_cpu_usage(sys: &mut System, results: &mut HashMap<String, f64>) {
 
 #[cfg(not(target_os = "macos"))]
 pub fn get_cpu_counter(sys: &mut System, results: &mut HashMap<String, f64>) {
-    sys.refresh_cpu();
+    sys.refresh_cpu_all();
 
-    let vendor = sys.global_cpu_info().vendor_id();
+    let cpu = sys.cpus().get(0).expect("REASON");
+    let vendor = cpu.vendor_id();
     #[cfg(not(target_os = "macos"))]
     if vendor == "GenuineIntel" {
         intel::get_intel_cpu_counter(results);

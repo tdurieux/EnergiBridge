@@ -15,11 +15,12 @@ use std::thread::sleep;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use sysinfo::{CpuExt, ProcessExt, RefreshKind, System, SystemExt};
+use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System};
 
 use cpu::{get_cpu_counter, get_cpu_usage};
 use gpu::get_gpu_counter;
 use memory::get_memory_usage;
+use process::get_process_usage;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -52,8 +53,12 @@ struct Args {
     summary: bool,
 
     // the command to execute
-    #[clap(trailing_var_arg = true)]
-    command: Vec<String>,
+    #[clap(trailing_var_arg = true, conflicts_with = "pid")]
+    command: Option<Vec<String>>,
+
+    // the pid of the process to attach to
+    #[clap(short, long, conflicts_with = "command")]
+    pid: Option<u32>,
 }
 
 fn main() {
@@ -66,15 +71,15 @@ fn main() {
     let running = Arc::new(AtomicBool::new(true));
     let r = running.clone();
 
-    if args.command.is_empty() {
-        eprintln!("Usage: {} <command>", "EnergiBridge");
+    if args.command.is_none() && args.pid.is_none() {
+        eprintln!("Usage: {} --pid <PID> or <command> <args>", "EnergiBridge");
         exit(1);
     }
 
-    if interval < System::MINIMUM_CPU_UPDATE_INTERVAL {
+    if interval < sysinfo::MINIMUM_CPU_UPDATE_INTERVAL {
         eprintln!(
             "[WARNING] Interval must be at least {}ms to accurately measure CPU usage.",
-            System::MINIMUM_CPU_UPDATE_INTERVAL.as_millis()
+            sysinfo::MINIMUM_CPU_UPDATE_INTERVAL.as_millis()
         );
     }
     
@@ -89,7 +94,7 @@ fn main() {
 
     let mut sys = System::new_all();
     sys.refresh_all();
-    std::thread::sleep(System::MINIMUM_CPU_UPDATE_INTERVAL);
+
     let mut results: HashMap<String, f64> = HashMap::new();
     collect(&mut sys, collect_gpu, 0, &mut results);
 
@@ -100,83 +105,162 @@ fn main() {
         None => Box::new(stdout()) as Box<dyn Write>,
     };
 
-    let cmd = execute_command(args.command, args.command_output);
-
-    match cmd {
-        Ok(mut child) => {
-            let start_time = Instant::now();
-
-            collect(&mut sys, collect_gpu, child.id(), &mut results);
-            print_header(&results, sep, &mut output);
-            let mut previous_time = SystemTime::now();
-            let mut energy_array: f64 = 0 as f64;
-            let mut previous_results = results.clone();
-            let exit_code = loop {
-                if args.max_execution > 0
-                    && start_time.elapsed().as_secs() >= args.max_execution as u64
-                {
-                    // kill the process if it is still running
-                    child.kill().expect("Failed to kill child");
-                    break 0;
-                }
-                let time_before = SystemTime::now();
-                print_results(previous_time, &mut results, sep, &mut output);
-
-                if args.summary {
-                    if results.contains_key("CPU_POWER (Watts)") {
-                        let energy = results["CPU_POWER (Watts)"];
-                        energy_array += energy
-                            * (previous_time.elapsed().unwrap().as_millis() as f64 / 1000 as f64);
-                    } else if results.contains_key("SYSTEM_POWER (Watts)") {
-                        let energy = results["SYSTEM_POWER (Watts)"];
-                        energy_array += energy
-                            * (previous_time.elapsed().unwrap().as_millis() as f64 / 1000 as f64);
-                    } else if results.contains_key("CPU_ENERGY (J)") {
-                        let energy = results["CPU_ENERGY (J)"];
-                        let old_energy = previous_results["CPU_ENERGY (J)"];
-                        energy_array += energy - old_energy;
-                    } else if results.contains_key("PACKAGE_ENERGY (J)") {
-                        let energy = results["PACKAGE_ENERGY (J)"];
-                        let old_energy = previous_results["PACKAGE_ENERGY (J)"];
-                        energy_array += energy - old_energy;
-                    }
-                }
-                previous_time = SystemTime::now();
-                previous_results = results.clone();
+    if args.command.is_some() {
+        let cmd = execute_command(args.command.expect("Command was not provided"), args.command_output);
+    
+        match cmd {
+            Ok(mut child) => {
+                let start_time = Instant::now();
+                sys.refresh_all();
+                println!("{}", child.id());
                 collect(&mut sys, collect_gpu, child.id(), &mut results);
-
-                if !running.load(Ordering::SeqCst) {
-                    // EnergiBridge received ctrlc
-                    child.kill().expect("Failed to kill child");
-                    break 1;
-                }
-                match child.try_wait() {
-                    Ok(Some(status)) => {
-                        // print_results(previous_time, &mut results, sep, &mut output);
-                        break status.code().unwrap();
+                print_header(&results, sep, &mut output);
+                let mut previous_time = SystemTime::now();
+                let mut energy_array: f64 = 0 as f64;
+                let mut previous_results = results.clone();
+                let exit_code = loop {
+                    if args.max_execution > 0
+                        && start_time.elapsed().as_secs() >= args.max_execution as u64
+                    {
+                        // kill the process if it is still running
+                        child.kill().expect("Failed to kill child");
+                        break 0;
                     }
-                    Ok(None) => {
-                        sleep(interval - time_before.elapsed().unwrap());
+                    let time_before = SystemTime::now();
+                    print_results(previous_time, &mut results, sep, &mut output);
+    
+                    if args.summary {
+                        if results.contains_key("CPU_POWER (Watts)") {
+                            let energy = results["CPU_POWER (Watts)"];
+                            energy_array += energy
+                                * (previous_time.elapsed().unwrap().as_millis() as f64 / 1000 as f64);
+                        } else if results.contains_key("SYSTEM_POWER (Watts)") {
+                            let energy = results["SYSTEM_POWER (Watts)"];
+                            energy_array += energy
+                                * (previous_time.elapsed().unwrap().as_millis() as f64 / 1000 as f64);
+                        } else if results.contains_key("CPU_ENERGY (J)") {
+                            let energy = results["CPU_ENERGY (J)"];
+                            let old_energy = previous_results["CPU_ENERGY (J)"];
+                            energy_array += energy - old_energy;
+                        } else if results.contains_key("PACKAGE_ENERGY (J)") {
+                            let energy = results["PACKAGE_ENERGY (J)"];
+                            let old_energy = previous_results["PACKAGE_ENERGY (J)"];
+                            energy_array += energy - old_energy;
+                        }
                     }
-                    Err(e) => println!("Error waiting: {}", e),
+                    previous_time = SystemTime::now();
+                    previous_results = results.clone();
+                    // Refresh CPU usage to get actual value.
+                    sys.refresh_processes_specifics(
+                        ProcessesToUpdate::All,
+                        true,
+                        ProcessRefreshKind::new().with_cpu()
+                    );
+                    collect(&mut sys, collect_gpu, child.id(), &mut results);
+    
+                    if !running.load(Ordering::SeqCst) {
+                        // EnergiBridge received ctrlc
+                        child.kill().expect("Failed to kill child");
+                        break 1;
+                    }
+                    match child.try_wait() {
+                        Ok(Some(status)) => {
+                            // print_results(previous_time, &mut results, sep, &mut output);
+                            break status.code().unwrap();
+                        }
+                        Ok(None) => {
+                            sleep(interval - time_before.elapsed().unwrap());
+                        }
+                        Err(e) => println!("Error waiting: {}", e),
+                    }
+                };
+    
+                print_results(previous_time, &mut results, sep, &mut output);
+                if energy_array > 0.0 && args.summary {
+                    println!(
+                        "Energy consumption in joules: {} for {} sec of execution.",
+                        energy_array,
+                        start_time.elapsed().as_secs_f32()
+                    );
                 }
-            };
-
-            print_results(previous_time, &mut results, sep, &mut output);
-            if energy_array > 0.0 && args.summary {
-                println!(
-                    "Energy consumption in joules: {} for {} sec of execution.",
-                    energy_array,
-                    start_time.elapsed().as_secs_f32()
-                );
+    
+                exit(exit_code);
             }
+            Err(err) => {
+                eprintln!("Failed to execute command: {}", err);
+                exit(1);
+            }
+        }
+    } else if args.pid.is_some() {
+        let pid = Pid::from_u32(args.pid.expect("PID must be provided"));
+        let _target_process = match sys.process(pid) {
+            Some(proc) => proc,
+            None => {
+                eprintln!("Failed to find a process with PID: {}", pid);
+                exit(1);
+            }
+        };
+        let start_time = Instant::now();
+        collect(&mut sys, collect_gpu, pid.as_u32(), &mut results);
+        print_header(&results, sep, &mut output);
+        let mut previous_time = SystemTime::now();
+        let mut energy_array: f64 = 0 as f64;
+        let mut previous_results = results.clone();
+        let exit_code = loop {
+            if args.max_execution > 0
+                && start_time.elapsed().as_secs() >= args.max_execution as u64
+            {
+                break 0;
+            }
+            let time_before = SystemTime::now();
+            print_results(previous_time, &mut results, sep, &mut output);
 
-            exit(exit_code);
+            if args.summary {
+                if results.contains_key("CPU_POWER (Watts)") {
+                    let energy = results["CPU_POWER (Watts)"];
+                    energy_array += energy
+                        * (previous_time.elapsed().unwrap().as_millis() as f64 / 1000 as f64);
+                } else if results.contains_key("SYSTEM_POWER (Watts)") {
+                    let energy = results["SYSTEM_POWER (Watts)"];
+                    energy_array += energy
+                        * (previous_time.elapsed().unwrap().as_millis() as f64 / 1000 as f64);
+                } else if results.contains_key("CPU_ENERGY (J)") {
+                    let energy = results["CPU_ENERGY (J)"];
+                    let old_energy = previous_results["CPU_ENERGY (J)"];
+                    energy_array += energy - old_energy;
+                } else if results.contains_key("PACKAGE_ENERGY (J)") {
+                    let energy = results["PACKAGE_ENERGY (J)"];
+                    let old_energy = previous_results["PACKAGE_ENERGY (J)"];
+                    energy_array += energy - old_energy;
+                }
+            }
+            previous_time = SystemTime::now();
+            previous_results = results.clone();
+            collect(&mut sys, collect_gpu, pid.as_u32(), &mut results);
+            // Check if the process is still running
+            sys.refresh_processes(ProcessesToUpdate::All, true);
+            if sys.process(pid).is_none() {
+                println!("Process with PID {} has exited.", pid);
+                break 0;
+            }
+            if !running.load(Ordering::SeqCst) {
+                // EnergiBridge received ctrlc
+                break 1;
+            }
+            // Sleep for the remaining interval duration
+            sleep(interval - time_before.elapsed().unwrap());
+        };
+
+        print_results(previous_time, &mut results, sep, &mut output);
+        if energy_array > 0.0 && args.summary {
+            println!(
+                "Energy consumption in joules: {} for {} sec of execution.",
+                energy_array,
+                start_time.elapsed().as_secs_f32()
+            );
         }
-        Err(err) => {
-            eprintln!("Failed to execute command: {}", err);
-            exit(1);
-        }
+
+        exit(exit_code);
     }
 }
 
@@ -202,7 +286,7 @@ fn collect(sys: &mut System, collect_gpu: bool, pid: u32, results: &mut HashMap<
     if collect_gpu {
         get_gpu_counter(results);
     }
-    // get_process_usage(sys, pid, results);
+    get_process_usage(sys, pid, results);
 }
 
 fn print_results(
