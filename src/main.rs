@@ -156,7 +156,10 @@ fn main() {
                         break status.code().unwrap();
                     }
                     Ok(None) => {
-                        sleep(interval - time_before.elapsed().unwrap());
+                        // A sample can take longer than the interval, and the clock can
+                        // step backwards: sleep for what is left of it, possibly nothing.
+                        let elapsed = time_before.elapsed().unwrap_or_default();
+                        sleep(interval.saturating_sub(elapsed));
                     }
                     Err(e) => println!("Error waiting: {}", e),
                 }
